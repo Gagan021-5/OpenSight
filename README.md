@@ -3,7 +3,6 @@
 OpenSight is a free, browser-based MERN vision therapy platform that gamifies clinically inspired exercises for **Amblyopia**, **Strabismus**, **Convergence Insufficiency**, **Eye Tracking Disorders**, and **Spatial Neglect**.  
 Supports **red–blue therapy glasses** and **bilateral fusion training**.
 
-> ⚠️ Assistive therapy tool only. Not a medical diagnosis system.
 
 ---
 
