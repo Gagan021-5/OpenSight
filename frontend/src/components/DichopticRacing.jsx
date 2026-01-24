@@ -160,9 +160,9 @@ export default function DichopticRacing({ onGameEnd, isFullScreen }) {
     return (
       <div className="h-full w-full flex items-center justify-center relative">
         <canvas ref={canvasRef} width={W} height={H} className="max-h-full max-w-full" style={{ objectFit: 'contain' }} />
-        <div className="absolute top-2 left-2 font-mono font-bold text-white drop-shadow-lg z-10">SCORE: {score}</div>
+        <div className="absolute top-4 left-4 font-mono font-bold text-white drop-shadow-lg z-20 bg-slate-900/60 backdrop-blur-md border border-white/10 px-3 py-2 rounded-xl">SCORE: {score}</div>
         {gameState !== 'PLAYING' && (
-          <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-10">
+          <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-20">
             {gameState === 'GAMEOVER' && (<div className="text-center mb-4"><AlertTriangle className="mx-auto w-12 h-12 mb-2" style={{ color: colors.target }} /><h2 className="text-2xl font-black">CRASHED</h2><p className="text-lg" style={{ color: colors.target }}>Score: {score}</p></div>)}
             {gameState === 'PAUSED' && (<div className="text-center mb-4"><Pause className="mx-auto w-12 h-12 mb-2" style={{ color: colors.lock }} /><h2 className="text-2xl font-black">PAUSED</h2></div>)}
             <div className="flex flex-col gap-2">
@@ -176,58 +176,34 @@ export default function DichopticRacing({ onGameEnd, isFullScreen }) {
   }
 
   return (
-    <div className="flex flex-col items-center min-h-screen bg-slate-900 text-white p-4">
-      <div className="flex gap-3 mb-4">
-        <Car className="w-8 h-8" style={{ color: colors.target }} />
-        <h1 className="text-2xl font-bold">Racing</h1>
-      </div>
-      <div className="flex gap-6 items-start max-w-4xl mx-auto w-full">
-        <div className="relative rounded-lg border-2 border-slate-700 overflow-hidden bg-slate-950 max-w-full">
-          <canvas ref={canvasRef} width={W} height={H} className="block max-w-full max-h-[70vh] object-contain" />
-          <div className="absolute top-3 left-3 font-mono font-bold text-lg">SCORE: {score}</div>
+    <div className="relative w-full h-full bg-gray-900 overflow-hidden">
+      {/* Layer 1: Game Canvas - Full Screen Background */}
+      <div className="absolute inset-0 flex items-center justify-center p-4">
+        <div className="relative rounded-xl border border-white/10 overflow-hidden bg-slate-950 w-full h-full max-w-5xl max-h-[85vh]">
+          <canvas ref={canvasRef} width={W} height={H} className="block w-full h-full object-contain" style={{ aspectRatio: '16/9' }} />
+          <div className="absolute top-3 left-3 font-mono font-bold text-lg text-white bg-slate-900/60 backdrop-blur-md border border-white/10 px-3 py-2 rounded-xl">SCORE: {score}</div>
           {gameState !== 'PLAYING' && (
-            <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center">
-              {gameState === 'GAMEOVER' && (
-                <div className="text-center mb-4">
-                  <AlertTriangle className="mx-auto w-12 h-12 mb-2" style={{ color: colors.target }} />
-                  <h2 className="text-2xl font-black">CRASHED</h2>
-                  <p className="text-lg" style={{ color: colors.target }}>Score: {score}</p>
-                </div>
-              )}
-              {gameState === 'PAUSED' && (
-                <div className="text-center mb-4">
-                  <Pause className="mx-auto w-12 h-12 mb-2" style={{ color: colors.lock }} />
-                  <h2 className="text-2xl font-black">PAUSED</h2>
-                </div>
-              )}
+            <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-20">
+              {gameState === 'GAMEOVER' && (<div className="text-center mb-4"><AlertTriangle className="mx-auto w-12 h-12 mb-2" style={{ color: colors.target }} /><h2 className="text-2xl font-black">CRASHED</h2><p className="text-lg" style={{ color: colors.target }}>Score: {score}</p></div>)}
+              {gameState === 'PAUSED' && (<div className="text-center mb-4"><Pause className="mx-auto w-12 h-12 mb-2" style={{ color: colors.lock }} /><h2 className="text-2xl font-black">PAUSED</h2></div>)}
               <div className="flex flex-col gap-2">
-                <button
-                  onClick={() => {
-                    if (gameState === 'START' || gameState === 'GAMEOVER') reset();
-                    else if (gameState === 'PAUSED') { lastT.current = performance.now(); setGameState('PLAYING'); }
-                  }}
-                  className="flex items-center gap-2 px-6 py-3 rounded-full font-bold"
-                  style={{ backgroundColor: colors.target, color: '#fff' }}
-                >
-                  <Play fill="currentColor" /> {gameState === 'START' ? 'Start' : gameState === 'PAUSED' ? 'Continue' : 'Restart'}
-                </button>
-                {(gameState === 'GAMEOVER' || gameState === 'PAUSED') && (
-                  <button onClick={reset} className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-600 hover:bg-slate-500 text-sm font-bold">
-                    <RotateCcw size={14} /> Restart
-                  </button>
-                )}
+                <button onClick={() => { if (gameState === 'START' || gameState === 'GAMEOVER') reset(); else if (gameState === 'PAUSED') { lastT.current = performance.now(); setGameState('PLAYING'); } }} className="flex items-center gap-2 px-6 py-3 rounded-full font-bold" style={{ backgroundColor: colors.target, color: '#fff' }}><Play fill="currentColor" /> {gameState === 'START' ? 'Start' : gameState === 'PAUSED' ? 'Continue' : 'Restart'}</button>
+                {(gameState === 'GAMEOVER' || gameState === 'PAUSED') && (<button onClick={reset} className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-600 hover:bg-slate-500 text-sm font-bold"><RotateCcw size={14} /> Restart</button>)}
               </div>
             </div>
           )}
         </div>
-        <div className="w-52 bg-slate-800 p-4 rounded-xl border border-slate-600 space-y-4">
-          <div className="flex items-center gap-2 text-slate-400 font-semibold text-sm"><Settings size={14} /> Config</div>
-          <div>
-            <label className="block text-sm text-slate-400 mb-1">Target intensity</label>
-            <input type="range" min="0.1" max="1" step="0.1" value={intensity} onChange={(e) => setIntensity(parseFloat(e.target.value))} className="w-full accent-indigo-500" />
-          </div>
-          <p className="text-slate-400 text-sm">SPACE: Pause. Arrows: Lanes. Speed: {displaySpeed}</p>
+      </div>
+
+      {/* Layer 2: Header Info - Glass HUD Top Left */}
+      <div className="absolute top-4 left-4 z-20 max-w-sm p-4 rounded-xl bg-slate-900/60 backdrop-blur-md border border-white/10 text-white shadow-lg pointer-events-none">
+        <div className="flex items-center gap-3 mb-2">
+          <Car className="w-6 h-6" style={{ color: colors.target }} />
+          <h1 className="text-xl sm:text-2xl font-bold">Racing</h1>
         </div>
+        <p className="text-sm text-gray-300 hidden sm:block">
+          Dichoptic training • Avoid obstacles and react fast
+        </p>
       </div>
     </div>
   );

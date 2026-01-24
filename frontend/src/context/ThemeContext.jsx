@@ -13,7 +13,7 @@ export const ThemeProvider = ({ children }) => {
     if (typeof window === 'undefined') return false;
     const saved = localStorage.getItem('opensight_dark');
     if (saved !== null) return saved === 'true';
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return false; // Default to light mode
   });
 
   useEffect(() => {

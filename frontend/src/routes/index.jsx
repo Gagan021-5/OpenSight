@@ -27,13 +27,14 @@ export default function AppRoutes() {
     <Routes>
       <Route element={<AuthLayout />}>
         <Route path="/sign-in" element={isSignedIn ? <Navigate to="/dashboard" replace /> : <SignInPage />} />
-        <Route path="/sign-up" element={isSignedIn ? <Navigate to="/setup" replace /> : <SignUpPage />} />
+        <Route path="/sign-up" element={isSignedIn ? <Navigate to="/dashboard" replace /> : <SignUpPage />} />
       </Route>
 
       <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
         <Route path="/setup" element={<SetupPage />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/settings" element={<SetupPage />} />
       </Route>
 
       <Route
@@ -54,7 +55,7 @@ export default function AppRoutes() {
       />
       <Route
         path="/game/tetris"
-        element={<ProtectedRoute><GameWrapper gameId="strabismus"><TherapyTetris /></GameWrapper></ProtectedRoute>}
+        element={<ProtectedRoute><GameWrapper gameId="tetris"><TherapyTetris /></GameWrapper></ProtectedRoute>}
       />
       <Route
         path="/game/whack"

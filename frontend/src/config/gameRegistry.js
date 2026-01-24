@@ -1,14 +1,3 @@
-import {
-  Gamepad2,
-  Target,
-  Zap,
-  Sparkles,
-  CheckCircle2,
-  Menu,
-  X,
-  Github,
-} from 'lucide-react';
-
 export const GAME_REGISTRY = {
   amblyopia: [
     {

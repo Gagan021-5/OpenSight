@@ -1,47 +1,90 @@
-import express from 'express';
-import axios from 'axios';
+import express from "express";
+import Groq from "groq-sdk";
+import "dotenv/config";
 
 const router = express.Router();
 
-router.post('/', async (req, res) => {
+// Initialize Groq
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
+router.post("/", async (req, res) => {
+  const { message } = req.body;
+  
+  // ============================================================
+  // 🛡️ SMART LOCAL KNOWLEDGE BASE
+  // (Instant answers for specific questions, works offline!)
+  // ============================================================
+  
+  const lowerMsg = message?.toLowerCase() || "";
+  let fallbackReply = null; // We start as null to see if we match anything
+
+  // 1. Game Specific Explanations 🎮
+  if (lowerMsg.includes("snake")) {
+    fallbackReply = "🐍 **Dichoptic Snake:** This game separates the snake and food between your eyes. You must fuse the images to play, which trains binocular coordination.";
+  } else if (lowerMsg.includes("racing") || lowerMsg.includes("car")) {
+    fallbackReply = "🏎️ **Dichoptic Racing:** A high-speed game where obstacles and cars are split between eyes. It improves reaction time and breaks suppression.";
+  } else if (lowerMsg.includes("tetris") || lowerMsg.includes("block")) {
+    fallbackReply = "🧩 **Therapy Tetris:** Falling blocks are split between your eyes. This helps with spatial planning and balancing vision in both eyes.";
+  } else if (lowerMsg.includes("convergence") || lowerMsg.includes("zoom")) {
+    fallbackReply = "🎯 **Zooming Target:** A target moves in and out to specifically strengthen your convergence (crossing) and divergence (uncrossing) skills.";
+  } else if (lowerMsg.includes("whack") || lowerMsg.includes("mole")) {
+    fallbackReply = "🔨 **Whack-A-Target:** Targets appear randomly to train 'saccades'—the fast eye movements you need for reading and scanning.";
+  } else if (lowerMsg.includes("lighthouse") || lowerMsg.includes("neglect")) {
+    fallbackReply = "💡 **Lighthouse:** Designed for Visual Neglect. It forces you to scan into your 'blind' side to find the light.";
+  } else if (lowerMsg.includes("sea") || lowerMsg.includes("fish")) {
+    fallbackReply = "🌊 **Dichoptic Sea:** A relaxing game for contrast sensitivity. You must find faint objects in a deep blue background.";
+  }
+  
+  // 2. General Game Question
+  else if (lowerMsg.includes("game") || lowerMsg.includes("play") || lowerMsg.includes("activities")) {
+    fallbackReply = "We have 7 specialized games: Snake 🐍, Racing 🏎️, Deep Sea 🌊, Convergence 🎯, Tetris 🧩, Whack-A-Target 🔨, and Lighthouse 💡. Which one interests you?";
+  }
+  
+  // 3. Condition Explanations 👁️
+  else if (lowerMsg.includes("lazy") || lowerMsg.includes("amblyopia")) {
+    fallbackReply = "Amblyopia (lazy eye) is treated by forcing the weaker eye to work. OpenSight uses **Dichoptic Training**—showing different images to each eye—to re-wire the brain.";
+  }
+  
+  // 4. Greetings & Pricing
+  else if (lowerMsg.includes("hello") || lowerMsg.includes("hi")) {
+    fallbackReply = "Hello! I am Dr. Sight. Ask me about our games like 'Snake' or 'Racing', or tell me about your vision goals!";
+  } else if (lowerMsg.includes("cost") || lowerMsg.includes("free") || lowerMsg.includes("price")) {
+    fallbackReply = "OpenSight is 100% free and open-source! 💖 We believe vision therapy should be accessible to everyone.";
+  }
+
+  // If we found a local match, return it immediately (Fastest!)
+  if (fallbackReply) {
+    return res.json({ reply: fallbackReply });
+  }
+
+  // ============================================================
+  // 🚀 ATTEMPT REAL AI CALL (Groq Llama 3.1)
+  // ============================================================
   try {
-    const { message } = req.body;
-    if (!message || typeof message !== 'string') {
-      return res.status(400).json({ error: 'Message (string) is required' });
-    }
-    if (!process.env.HF_TOKEN) {
-      return res.status(500).json({ error: 'HF_TOKEN is not configured on the server' });
-    }
-
-    const systemPrompt = 'You are Dr. Sight, a friendly vision therapy assistant. Answer brief questions about eye exercises, amblyopia, and eye health in a supporting tone.';
-    const payload = {
-      inputs: `${systemPrompt}\n\nUser: ${message}\nAssistant:`,
-      parameters: {
-        max_new_tokens: 150,
-        temperature: 0.7,
-        do_sample: true,
-      },
-    };
-
-    const response = await axios.post(
-      'https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2',
-      payload,
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.HF_TOKEN}`,
-          'Content-Type': 'application/json',
+    const chatCompletion = await groq.chat.completions.create({
+      messages: [
+        {
+          role: "system",
+          content: "You are Dr. Sight, a friendly vision therapy assistant. Keep answers short (under 2 sentences) and encouraging."
         },
-        timeout: 30000,
-      }
-    );
+        {
+          role: "user",
+          content: message
+        }
+      ],
+      // 🔴 UPDATED MODEL NAME HERE (The Fix)
+      model: "llama-3.1-8b-instant", 
+      temperature: 0.7,
+      max_tokens: 150,
+    });
 
-    const generated = response.data?.[0]?.generated_text || '';
-    const assistantReply = generated.includes('Assistant:') ? generated.split('Assistant:').pop().trim() : generated.trim();
+    const reply = chatCompletion.choices[0]?.message?.content || "I'm having trouble connecting, but try asking about 'Snake' or 'Racing'!";
+    res.json({ reply });
 
-    res.json({ reply: assistantReply || 'Sorry, I could not generate a response.' });
   } catch (error) {
-    console.error('Chat route error:', error.response?.data || error.message);
-    res.status(502).json({ error: 'Failed to fetch response from AI' });
+    console.error("Groq API Error:", error.message);
+    // Final Safety Net
+    res.json({ reply: "I'm having a little trouble connecting to the cloud, but you can ask me about 'games' or 'amblyopia' and I can still help!" });
   }
 });
 

@@ -43,23 +43,21 @@ export default function GameWrapper({ gameId, children }) {
   return (
     <div
       ref={containerRef}
-      className={`relative ${isFullScreen ? 'h-screen w-screen flex flex-col bg-slate-950' : 'w-full min-h-screen'}`}
+      className={`relative ${isFullScreen ? 'h-screen w-screen' : 'w-full h-[calc(100vh-64px)]'} bg-gray-900 overflow-hidden`}
     >
       <button
         type="button"
         onClick={toggleFullScreen}
-        className="absolute top-2 right-2 z-[100] p-2 rounded-xl bg-black/50 hover:bg-black/70 text-white transition"
+        className="absolute top-4 right-4 z-[100] p-3 rounded-xl backdrop-blur-md bg-slate-900/80 border border-white/10 text-white hover:bg-slate-800/80 transition shadow-lg"
         aria-label="Toggle fullscreen"
       >
         {isFullScreen ? <Minimize size={20} /> : <Maximize size={20} />}
       </button>
-      {isFullScreen ? (
-        <div className="flex-1 flex items-center justify-center min-h-0 p-2">
-          {withProps}
-        </div>
-      ) : (
-        withProps
-      )}
+      
+      {/* Game Container - Full screen background */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        {withProps}
+      </div>
     </div>
   );
 }

@@ -7,6 +7,23 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const status = error?.response?.status;
+    const isAuthRoute = error?.config?.url?.includes('/auth/login') || error?.config?.url?.includes('/auth/register');
+    if (status === 401 && !isAuthRoute) {
+      localStorage.removeItem('opensight_token');
+      delete api.defaults.headers.common['Authorization'];
+      const p = window.location?.pathname || '';
+      if (p !== '/sign-in' && p !== '/sign-up') {
+        window.location.href = '/sign-in';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export const setAuthToken = (token) => {
   if (token) {
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;

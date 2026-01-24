@@ -131,29 +131,52 @@ export default function DichopticSnake({ onGameEnd, isFullScreen }) {
   }
 
   return (
-    <div className="flex flex-col items-center min-h-screen bg-slate-900 text-white p-4">
-      <div className="max-w-md w-full mb-4 text-center">
-        <h1 className="text-2xl font-bold flex items-center justify-center gap-2" style={{ color: colorsFull.target }}>
-          <Eye className="w-6 h-6" /> Snake
-        </h1>
-        <p className="text-slate-400 text-sm">Amblyopia. Target color = weak eye. Use red/blue glasses.</p>
-      </div>
-      <div className="flex gap-6 items-start justify-center w-full max-w-4xl mx-auto">
-        <div className="relative flex items-center justify-center bg-slate-950 rounded-lg border-2 border-slate-700 overflow-hidden max-w-full">
-          <canvas ref={canvasRef} width={CANVAS_SIZE} height={CANVAS_SIZE} className="block max-w-full max-h-[70vh] object-contain" />
+    <div className="relative w-full h-full bg-gray-900 overflow-hidden">
+      {/* Layer 1: Game Canvas - Full Screen Background */}
+      <div className="absolute inset-0 flex items-center justify-center p-4">
+        <div className="relative flex items-center justify-center bg-slate-950 rounded-xl border border-white/10 overflow-hidden w-full h-full max-w-5xl max-h-[85vh]">
+          <canvas 
+            ref={canvasRef} 
+            width={CANVAS_SIZE} 
+            height={CANVAS_SIZE} 
+            className="max-w-full max-h-full shadow-2xl rounded-xl object-contain"
+            style={{ aspectRatio: '1/1' }}
+          />
           {gameState !== 'PLAYING' && overlay}
         </div>
-        <div className="w-56 bg-slate-800 p-4 rounded-xl border border-slate-600 space-y-4 flex-shrink-0">
-          <div className="flex items-center gap-2 text-slate-300 font-semibold border-b border-slate-600 pb-2">
+      </div>
+
+      {/* Layer 2: Header Info - Glass HUD Top Left */}
+      <div className="absolute top-4 left-4 z-20 max-w-sm p-4 rounded-xl bg-slate-900/60 backdrop-blur-md border border-white/10 text-white shadow-lg pointer-events-none">
+        <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2" style={{ color: colorsFull.target }}>
+          <Eye className="w-5 h-5 sm:w-6 sm:h-6" /> Snake
+        </h1>
+        <p className="text-sm text-gray-300 mt-1 hidden sm:block">
+          Target color = weak eye. Use red/blue glasses.
+        </p>
+      </div>
+
+      {/* Layer 2: Controls Panel - Glass HUD Top Right */}
+      <div className="absolute top-4 right-4 z-20">
+        {/* Mobile: Collapsible Button */}
+        <div className="md:hidden">
+          <button className="p-3 rounded-xl bg-slate-900/80 backdrop-blur-md border border-white/10 text-white hover:bg-slate-800/80 transition">
+            <Settings size={20} />
+          </button>
+        </div>
+
+        {/* Desktop: Full Controls Panel */}
+        <div className="hidden md:block w-72 bg-slate-900/80 backdrop-blur-md border border-white/10 p-4 rounded-xl shadow-lg">
+          <div className="flex items-center gap-2 text-white font-semibold border-b border-white/20 pb-2">
             <Settings size={16} /> Controls
           </div>
           <div>
-            <label className="block text-sm text-slate-400 mb-1">Food visibility</label>
+            <label className="block text-sm text-gray-300 mb-1">Food visibility</label>
             <input type="range" min="0.1" max="1" step="0.1" value={foodIntensity} onChange={(e) => setFoodIntensity(parseFloat(e.target.value))} className="w-full accent-indigo-500" />
-            <span className="text-xs text-slate-500">{Math.round(foodIntensity * 100)}%</span>
+            <span className="text-xs text-gray-400">{Math.round(foodIntensity * 100)}%</span>
           </div>
-          <p className="text-slate-400 text-sm">Score: <span className="text-white font-mono">{score}</span></p>
-          <p className="text-slate-500 text-xs">SPACE: Pause</p>
+          <p className="text-gray-300 text-sm">Score: <span className="text-white font-mono">{score}</span></p>
+          <p className="text-gray-400 text-xs">SPACE: Pause</p>
         </div>
       </div>
     </div>

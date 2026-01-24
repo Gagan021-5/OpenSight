@@ -19,8 +19,22 @@ export default function SignUpPage() {
     setLoading(true);
     setError('');
     try {
-      await register({ email, password, name: name || 'User', ageGroup });
-      navigate('/setup', { replace: true });
+      if (!email || !password || !name) {
+        setError('Please fill in all fields');
+        return;
+      }
+      if (password.length < 6) {
+        setError('Password must be at least 6 characters');
+        return;
+      }
+
+      await register({
+        email: email.trim(),
+        password,
+        name: name.trim() || 'User',
+        ageGroup,
+      });
+      navigate('/dashboard', { replace: true });
     } catch (err) {
       setError(err.response?.data?.error || 'Registration failed');
     } finally {
@@ -121,8 +135,8 @@ export default function SignUpPage() {
             </div>
             <button
               type="submit"
-              disabled={loading}
-              className="w-full py-4 rounded-xl font-semibold text-white bg-gradient-to-r from-[#4f46e5] to-[#7c3aed] hover:opacity-95 transition shadow-card disabled:opacity-70 flex items-center justify-center gap-2"
+              disabled={loading || !email || !password || !name}
+              className="w-full py-4 rounded-xl font-semibold text-white bg-gradient-to-r from-[#4f46e5] to-[#7c3aed] hover:opacity-95 transition shadow-card disabled:opacity-70 flex items-center justify-center gap-2 cursor-pointer"
             >
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Create account'}
             </button>

@@ -14,9 +14,9 @@
   --color-secondary: #0d9488;
   --color-secondary-hover: #0f766e;
   --color-secondary-muted: #5eead4;
-  /* Backgrounds – off-whites, cool grays (reduce eye strain) */
-  --color-bg: #f8fafc;
-  --color-bg-muted: #f1f5f9;
+  /* Backgrounds – pure white for premium aesthetic */
+  --color-bg: #ffffff;
+  --color-bg-muted: #ffffff;
   --color-surface: #ffffff;
   --color-border: #e2e8f0;
   --color-border-focus: #94a3b8;
@@ -43,8 +43,28 @@
 ---------------------------------------------------------------------------- */
 body {
   font-family: var(--font-sans);
-  background-color: var(--color-bg);
+  background-color: #ffffff;
   color: var(--color-primary);
+}
+
+/* Ensure root html respects dark mode */
+html {
+  color-scheme: light;
+}
+html.dark {
+  color-scheme: dark;
+}
+
+/* Force base text colors for dark mode */
+html.dark body {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+}
+html.dark h1, html.dark h2, html.dark h3, html.dark h4, html.dark h5, html.dark h6 {
+  color: #f8fafc !important;
+}
+html.dark p, html.dark span, html.dark div {
+  color: #e2e8f0 !important;
 }
 
 .font-kid { font-family: var(--font-kid); }

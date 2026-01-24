@@ -17,7 +17,11 @@ export default function SignInPage() {
     setLoading(true);
     setError('');
     try {
-      await login(email, password);
+      if (!email || !password) {
+        setError('Please fill in all fields');
+        return;
+      }
+      await login(email.trim(), password);
       navigate('/dashboard', { replace: true });
     } catch (err) {
       setError(err.response?.data?.error || 'Invalid email or password');
@@ -101,8 +105,8 @@ export default function SignInPage() {
             </div>
             <button
               type="submit"
-              disabled={loading}
-              className="w-full py-4 rounded-xl font-semibold text-white bg-gradient-to-r from-[#4f46e5] to-[#7c3aed] hover:opacity-95 transition shadow-card disabled:opacity-70 flex items-center justify-center gap-2"
+              disabled={loading || !email || !password}
+              className="w-full py-4 rounded-xl font-semibold text-white bg-gradient-to-r from-[#4f46e5] to-[#7c3aed] hover:opacity-95 transition shadow-card disabled:opacity-70 flex items-center justify-center gap-2 cursor-pointer"
             >
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Sign in <ArrowRight className="w-4 h-4" /></>}
             </button>
