@@ -1,144 +1,110 @@
-import { useState, useEffect, useRef } from 'react';
-import { MessageCircle, X, Send, Loader2, Sparkles } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { MessageCircle, X, Send, Bot } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useGlobal } from '../context/GlobalContext';
-import { useTranslation } from 'react-i18next';
-import api from '../utils/api'; // Use the configured api instance
+import axios from 'axios';
 
 export default function Chatbot() {
-  const { userProfile, ageGroup, condition, language: userLang } = useGlobal(); // userLang might be from context or just i18n
-  const { i18n, t } = useTranslation();
-  const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([
-    { role: 'assistant', text: i18n.language === 'hi' ? 'नमस्ते! मैं आपकी दृष्टि चिकित्सा में कैसे मदद कर सकता हूँ?' : 'Hi! How can I help with your vision therapy today?' }
-  ]);
+  const [open, setOpen] = useState(false);
+  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
-  const scrollRef = useRef(null);
+  const [typing, setTyping] = useState(false);
+  const chatEndRef = useRef(null);
 
-  // Auto-scroll
+  const scrollToBottom = () => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages, isOpen]);
+    scrollToBottom();
+  }, [messages, typing]);
 
-  const handleSend = async (e) => {
-    e.preventDefault();
+  const handleSend = async () => {
     if (!input.trim()) return;
-
     const userMsg = { role: 'user', text: input };
-    setMessages(prev => [...prev, userMsg]);
+    setMessages((prev) => [...prev, userMsg]);
     setInput('');
-    setLoading(true);
-
+    setTyping(true);
     try {
-      const context = {
-        ageGroup: ageGroup || 'adult',
-        condition: condition || 'general',
-        games: ['Snake', 'Tetris'], // Ideally fetch from user config or props
-        language: i18n.language
-      };
-
-      const res = await api.post('/chat', {
-        message: userMsg.text,
-        context
-      });
-
-      const aiMsg = { role: 'assistant', text: res.data.reply };
-      setMessages(prev => [...prev, aiMsg]);
-    } catch (error) {
-      console.error(error);
-      setMessages(prev => [...prev, { role: 'assistant', text: "Sorry, I'm having trouble connecting right now." }]);
+      const { data } = await axios.post('/api/chat', { message: input });
+      const botMsg = { role: 'assistant', text: data.reply };
+      setMessages((prev) => [...prev, botMsg]);
+    } catch (e) {
+      setMessages((prev) => [...prev, { role: 'assistant', text: 'Sorry, something went wrong.' }]);
     } finally {
-      setLoading(false);
+      setTyping(false);
     }
   };
 
-
   return (
-    <>
-      {/* Floating Button */}
-      <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={() => setIsOpen(true)}
-        className={`fixed bottom-6 right-6 z-40 p-4 rounded-full shadow-2xl transition-all ${
-            isOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'
-        } ${ageGroup === 'kid' ? 'bg-yellow-400 text-slate-900' : 'bg-indigo-600 text-white'}`}
-      >
-        <MessageCircle className="w-7 h-7" />
-      </motion.button>
+    <div className="pointer-events-none fixed bottom-5 right-5 z-50">
+      <div className="pointer-events-auto">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="h-14 w-14 rounded-full bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 grid place-items-center hover:bg-indigo-700 transition"
+          aria-label={open ? 'Close assistant' : 'Open assistant'}
+        >
+          {open ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
+        </button>
 
-      {/* Chat Window */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-6 right-6 z-50 w-full max-w-[350px] md:max-w-[400px] h-[500px] max-h-[80vh] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden"
-          >
-            {/* Header */}
-            <div className={`p-4 flex items-center justify-between ${ageGroup === 'kid' ? 'bg-yellow-400' : 'bg-indigo-600'}`}>
-              <div className="flex items-center gap-2">
-                <Sparkles className={`w-5 h-5 ${ageGroup === 'kid' ? 'text-slate-900' : 'text-white'}`} />
-                <h3 className={`font-bold ${ageGroup === 'kid' ? 'text-slate-900' : 'text-white'}`}>
-                  {ageGroup === 'kid' ? 'Vision Buddy' : 'Therapy Assistant'}
-                </h3>
+        <AnimatePresence>
+          {open && (
+            <motion.div
+              initial={{ opacity: 0, y: 12, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 12, scale: 0.98 }}
+              transition={{ duration: 0.18 }}
+              className="mt-3 w-[360px] max-w-[calc(100vw-2.5rem)] rounded-2xl border border-slate-200 bg-white/95 backdrop-blur-xl shadow-xl overflow-hidden"
+            >
+              <div className="px-4 py-3 border-b border-slate-200 font-semibold text-slate-900 flex items-center gap-2">
+                <Bot className="w-5 h-5 text-indigo-600" />
+                Dr. Sight
               </div>
-              <button 
-                onClick={() => setIsOpen(false)}
-                className={`p-1 rounded-full hover:bg-black/10 transition ${ageGroup === 'kid' ? 'text-slate-900' : 'text-white'}`}
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Messages */}
-            <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 dark:bg-slate-950/50">
-              {messages.map((m, i) => (
-                <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div 
-                    className={`max-w-[80%] p-3 rounded-2xl text-sm ${
-                      m.role === 'user' 
-                        ? 'bg-indigo-600 text-white rounded-br-none' 
-                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-bl-none shadow-sm'
-                    }`}
-                  >
-                    {m.text}
+              <div className="h-80 overflow-y-auto p-4 space-y-3">
+                {messages.length === 0 && (
+                  <div className="text-sm text-slate-500">Ask me anything about vision therapy!</div>
+                )}
+                {messages.map((msg, i) => (
+                  <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div
+                      className={`max-w-[80%] px-3 py-2 rounded-2xl text-sm whitespace-pre-wrap ${
+                        msg.role === 'user'
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-slate-100 text-slate-900'
+                      }`}
+                    >
+                      {msg.text}
+                    </div>
                   </div>
-                </div>
-              ))}
-              {loading && (
-                <div className="flex justify-start">
-                  <div className="bg-white dark:bg-slate-800 p-3 rounded-2xl rounded-bl-none shadow-sm border border-slate-200 dark:border-slate-700">
-                    <Loader2 className="w-5 h-5 animate-spin text-indigo-500" />
+                ))}
+                {typing && (
+                  <div className="flex justify-start">
+                    <div className="bg-slate-100 text-slate-500 px-3 py-2 rounded-2xl text-sm animate-pulse">
+                      Typing…
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-
-            {/* Input */}
-            <form onSubmit={handleSend} className="p-3 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex gap-2">
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder={i18n.language === 'hi' ? 'कुछ पूछें...' : 'Ask something...'}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
-              />
-              <button 
-                type="submit"
-                disabled={loading || !input.trim()}
-                className="p-2.5 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
-              >
-                <Send className="w-5 h-5" />
-              </button>
-            </form>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </>
+                )}
+                <div ref={chatEndRef} />
+              </div>
+              <div className="p-3 border-t border-slate-200 flex gap-2">
+                <input
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                  placeholder="Type a message…"
+                  className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500"
+                />
+                <button
+                  onClick={handleSend}
+                  disabled={!input.trim() || typing}
+                  className="p-2 rounded-xl bg-indigo-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
   );
 }

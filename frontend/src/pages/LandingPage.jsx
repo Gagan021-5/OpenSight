@@ -6,19 +6,29 @@ import {
   Zap,
   Sparkles,
   CheckCircle2,
+  Sun,
+  Moon,
+  Languages,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
+import { useTheme } from "../context/ThemeContext";
 import Navbar from "../components/Navbar";
 import Chatbot from "../components/Chatbot";
 import { useBackgroundAnimation } from "../hooks/useBackgroundAnimation";
 
 export default function LandingPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const { isDarkMode, toggleDarkMode } = useTheme();
   const background = useBackgroundAnimation("adult");
 
+  const toggleLanguage = () => {
+    const next = i18n.language === 'hi' ? 'en' : 'hi';
+    i18n.changeLanguage(next);
+  };
+
   return (
-    <div className="min-h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 transition-colors duration-300 font-sans selection:bg-indigo-500/30">
+    <div className="min-h-screen overflow-hidden bg-slate-50  transition-colors duration-300 font-sans selection:bg-indigo-500/30">
       {background}
       <Navbar />
 
@@ -63,6 +73,23 @@ export default function LandingPage() {
             >
               {t("landing.signIn")}
             </Link>
+            {/* Theme Toggle */}
+            <button
+              onClick={toggleDarkMode}
+              className="p-3 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              aria-label="Toggle theme"
+            >
+              {isDarkMode ? <Sun className="w-5 h-5 text-slate-700 dark:text-slate-200" /> : <Moon className="w-5 h-5 text-slate-700 dark:text-slate-200" />}
+            </button>
+            {/* Language Toggle */}
+            <button
+              onClick={toggleLanguage}
+              className="p-3 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center gap-1"
+              aria-label="Toggle language"
+            >
+              <Languages className="w-5 h-5 text-slate-700 dark:text-slate-200" />
+              <span className="text-xs font-bold uppercase text-slate-700 dark:text-slate-200">{i18n.language}</span>
+            </button>
           </div>
         </motion.div>
 

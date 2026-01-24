@@ -1,47 +1,44 @@
-import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 
-export const useBackgroundAnimation = (ageGroup) => {
-  const isKids = ageGroup === 'kid';
+export const useBackgroundAnimation = (ageGroup = 'adult') => {
+  const isKid = ageGroup === 'kid';
 
-  if (isKids) {
-    return (
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-950 dark:to-purple-950 transition-colors duration-500" />
-        {[...Array(15)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute rounded-full bg-white/30 dark:bg-white/10 blur-xl"
-            initial={{
-              x: Math.random() * window.innerWidth,
-              y: Math.random() * window.innerHeight,
-              scale: Math.random() * 0.5 + 0.5,
-            }}
-            animate={{
-              y: [null, Math.random() * window.innerHeight],
-              x: [null, Math.random() * window.innerWidth],
-            }}
-            transition={{
-              duration: Math.random() * 10 + 10,
-              repeat: Infinity,
-              ease: "linear",
-            }}
-            style={{
-              width: Math.random() * 100 + 50,
-              height: Math.random() * 100 + 50,
-            }}
-          />
-        ))}
-      </div>
-    );
-  }
+  const blobA = isKid
+    ? 'from-yellow-300/40 via-sky-300/30 to-violet-300/30'
+    : 'from-indigo-500/25 via-purple-500/20 to-cyan-500/20';
 
-  // Adult: Minimal, subtle gradient
+  const blobB = isKid
+    ? 'from-emerald-300/30 via-amber-300/25 to-pink-300/25'
+    : 'from-slate-500/15 via-indigo-500/15 to-fuchsia-500/15';
+
   return (
-    <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-950 transition-colors duration-500" />
-      <div className="absolute top-0 right-0 w-[50vw] h-[50vw] bg-indigo-500/5 rounded-full blur-3xl" />
-      <div className="absolute bottom-0 left-0 w-[50vw] h-[50vw] bg-purple-500/5 rounded-full blur-3xl" />
+    <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+      <motion.div
+        aria-hidden="true"
+        className={`absolute -top-24 -left-24 h-[420px] w-[420px] rounded-full bg-gradient-to-br ${blobA} blur-3xl`}
+        animate={{
+          x: [0, 40, -20, 0],
+          y: [0, 10, 30, 0],
+          scale: [1, 1.08, 0.98, 1],
+        }}
+        transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
+      />
+
+      <motion.div
+        aria-hidden="true"
+        className={`absolute -bottom-28 -right-28 h-[520px] w-[520px] rounded-full bg-gradient-to-br ${blobB} blur-3xl`}
+        animate={{
+          x: [0, -30, 20, 0],
+          y: [0, -20, -10, 0],
+          scale: [1, 0.98, 1.06, 1],
+        }}
+        transition={{ duration: 22, repeat: Infinity, ease: 'easeInOut' }}
+      />
+
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 bg-[radial-gradient(circle_at_20%_15%,rgba(79,70,229,0.10),transparent_55%),radial-gradient(circle_at_75%_80%,rgba(124,58,237,0.10),transparent_60%)]"
+      />
     </div>
   );
 };

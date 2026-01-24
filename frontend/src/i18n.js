@@ -6,47 +6,37 @@ const resources = {
   en: {
     translation: {
       landing: {
-        title: "Vision therapy,",
-        gamified: "reimagined.",
-        subtitle: "Professional-grade exercises for Amblyopia, Strabismus, and Convergence Insufficiency—now in your browser.",
-        getStarted: "Get Started",
-        signIn: "Sign In",
-        games: "Gamified Therapy",
-        gamesDesc: "Engaging games designed to improve visual acuity and binocular vision.",
-        logic: "Clinical Logic",
-        logicDesc: "Based on proven optometric principles for effective home therapy.",
-        progress: "Track Progress",
-        progressDesc: "Monitor improvement with detailed analytics and performance charts."
+        title: 'Vision Therapy',
+        gamified: 'Reimagined.',
+        subtitle: 'Clinically inspired vision exercises transformed into browser games.',
+        getStarted: 'Get started',
+        signIn: 'Sign in',
+        games: 'Gamified Therapy',
+        gamesDesc: 'Games designed to target common vision conditions.',
+        logic: 'Dichoptic Logic',
+        logicDesc: 'Red/Blue methods to isolate and train the weak eye.',
+        progress: 'Progress Tracking',
+        progressDesc: 'Track sessions and improvements over time.',
       },
-      dashboard: {
-        welcome: "Welcome back",
-        subtitle: "Your vision therapy journey continues. Today is a great day to improve!",
-        games: "Recommended Exercises"
-      }
-    }
+    },
   },
   hi: {
     translation: {
       landing: {
-        title: "दृष्टि चिकित्सा,",
-        gamified: "नये रूप में।",
-        subtitle: "एम्ब्लोपिया, स्ट्रैबिस्मस और कन्वर्जेंस अपर्याप्तता के लिए पेशेवर अभ्यास—अब आपके ब्राउज़र में।",
-        getStarted: "शुरू करें",
-        signIn: "साइन इन करें",
-        games: "गेमिफाइड थेरेपी",
-        gamesDesc: "दृश्य तीक्ष्णता और द्विनेत्री दृष्टि में सुधार के लिए डिज़ाइन किए गए आकर्षक खेल।",
-        logic: "नैदानिक तर्क",
-        logicDesc: "प्रभावी घरेलू चिकित्सा के लिए सिद्ध ऑप्टोमेट्रिक सिद्धांतों पर आधारित।",
-        progress: "प्रगति ट्रैक करें",
-        progressDesc: "विस्तृत विश्लेषण और प्रदर्शन चार्ट के साथ सुधार की निगरानी करें।"
+        title: 'दृष्टि चिकित्सा',
+        gamified: 'पुनर्परिभाषित।',
+        subtitle: 'क्लिनिकल रूप से प्रेरित दृष्टि व्यायाम जो ब्राउज़र गेम्स में बदल दिए गए हैं।',
+        getStarted: 'शुरू करें',
+        signIn: 'साइन इन करें',
+        games: 'गेमिफाइड थेरेपी',
+        gamesDesc: 'आम दृष्टि स्थितियों को लक्षित करने वाले गेम।',
+        logic: 'डायकॉप्टिक तर्क',
+        logicDesc: 'कमज़ोर आँख को अलग करने और प्रशिक्षित करने के लिए लाल/नीली विधियाँ।',
+        progress: 'प्रगति ट्रैकिंग',
+        progressDesc: 'सत्रों और सुधारों को समय के साथ ट्रैक करें।',
       },
-      dashboard: {
-        welcome: "वापसी पर स्वागत है",
-        subtitle: "आपकी दृष्टि चिकित्सा यात्रा जारी है। आज सुधार करने का एक बहुत अच्छा दिन है!",
-        games: "अनुशंसित अभ्यास"
-      }
-    }
-  }
+    },
+  },
 };
 
 i18n
@@ -55,13 +45,7 @@ i18n
   .init({
     resources,
     fallbackLng: 'en',
-    interpolation: {
-      escapeValue: false
-    },
-    detection: {
-      order: ['localStorage', 'navigator'],
-      caches: ['localStorage']
-    }
+    interpolation: { escapeValue: false },
   });
 
 export default i18n;

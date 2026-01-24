@@ -4,10 +4,17 @@ import 'dotenv/config';
 
 const connection = async () => {
     try {
-        await mongoose.connect(`${process.env.MONGO_URI}/${process.env.DB_NAME}`);
+        const base = process.env.MONGO_URI;
+        if (!base) {
+            throw new Error('MONGO_URI is not set');
+        }
+
+        const dbName = process.env.DB_NAME;
+        const uri = dbName && !base.endsWith('/') ? `${base}/${dbName}` : base;
+        await mongoose.connect(uri);
         console.log("✅ MongoDB Connected");
     } catch (e) {
-        console.log("❌ Error connecting to MongoDB:", e);
+        console.log("❌ Error connecting to MongoDB:", e?.message || e);
     }
 };
 

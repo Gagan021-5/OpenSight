@@ -33,7 +33,7 @@ export default function DashboardLayout() {
       {background}
       
       {/* Sidebar – desktop */}
-      <aside className="hidden md:flex md:flex-col md:w-60 md:fixed md:inset-y-0 md:border-r md:border-border bg-surface/80 backdrop-blur-md z-10">
+      <aside className="hidden md:flex md:flex-col md:w-60 md:sticky md:top-0 md:h-screen md:border-r md:border-border bg-surface/80 backdrop-blur-md z-30 pointer-events-auto">
         <div className="p-4 md:p-5 flex items-center gap-2 border-b border-border">
           <Eye className="w-8 h-8 text-primary" strokeWidth={1.8} />
           <span className="font-semibold text-primary">OpenSight</span>
@@ -78,7 +78,7 @@ export default function DashboardLayout() {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 md:pl-60 min-h-screen flex flex-col pb-20 md:pb-0 relative z-10">
+      <main className="flex-1 min-h-screen flex flex-col pb-20 md:pb-0 relative z-10 pointer-events-auto">
         {/* Mobile Header with Toggles */}
         <div className="md:hidden flex items-center justify-between p-4 bg-surface/80 backdrop-blur-md border-b border-border">
             <div className="flex items-center gap-2">
@@ -101,7 +101,7 @@ export default function DashboardLayout() {
       </main>
 
       {/* Bottom tab bar – mobile */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 flex items-center justify-around py-2 px-2 bg-surface/90 backdrop-blur-md border-t border-border safe-area-pb z-20">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 flex items-center justify-around py-2 px-2 bg-surface/90 backdrop-blur-md border-t border-border safe-area-pb z-30 pointer-events-auto">
         {nav.map(({ to, icon: Icon, label }) => (
           <NavLink key={to} to={to} className={linkClass}>
             <Icon className="w-6 h-6" /> <span className="text-xs">{label}</span>

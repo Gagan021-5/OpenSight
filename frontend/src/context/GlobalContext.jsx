@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { authAPI, userAPI, gameAPI, setAuthToken } from '../utils/api';
-import i18n from '../i18n'; // Ensure this is imported
+import i18n from '../i18n';
 
 const GlobalContext = createContext();
 
@@ -11,36 +11,16 @@ export const useGlobal = () => {
 };
 
 const TOKEN_KEY = 'opensight_token';
+const VISUAL_MODE_KEY = 'opensight_visual_mode';
 
 export const GlobalProvider = ({ children }) => {
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  // ageGroupTheme tracks 'kid' vs 'adult' UI style
-  const [ageGroupTheme, setAgeGroupTheme] = useState('adult');
-  
-  // visualMode tracks 'light' vs 'dark'
-  const [visualMode, setVisualMode] = useState(() => localStorage.getItem('theme') || 'light');
-
-  // Sync visualMode with DOM and localStorage
-  useEffect(() => {
-    const root = document.documentElement;
-    if (visualMode === 'dark') {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
-    localStorage.setItem('theme', visualMode);
-  }, [visualMode]);
-
-  const toggleVisualMode = () => {
-    setVisualMode(prev => prev === 'light' ? 'dark' : 'light');
-  };
-
-  const toggleLanguage = () => {
-    const newLang = i18n.language === 'en' ? 'hi' : 'en';
-    i18n.changeLanguage(newLang);
-    localStorage.setItem('i18nextLng', newLang);
-  };
+  const [theme, setTheme] = useState('adult');
+  const [visualMode, setVisualMode] = useState(() => {
+    const saved = localStorage.getItem(VISUAL_MODE_KEY);
+    return saved === 'dark' ? 'dark' : 'light';
+  });
 
   const loadProfile = useCallback(async () => {
     const token = localStorage.getItem(TOKEN_KEY);
@@ -53,7 +33,7 @@ export const GlobalProvider = ({ children }) => {
     try {
       const { data } = await userAPI.getProfile();
       setUserProfile(data.user);
-      setAgeGroupTheme(data.user.ageGroup || 'adult');
+      setTheme(data.user.ageGroup || 'adult');
     } catch {
       localStorage.removeItem(TOKEN_KEY);
       setAuthToken(null);
@@ -67,12 +47,28 @@ export const GlobalProvider = ({ children }) => {
     loadProfile();
   }, [loadProfile]);
 
+  useEffect(() => {
+    const root = document.documentElement;
+    if (visualMode === 'dark') root.classList.add('dark');
+    else root.classList.remove('dark');
+    localStorage.setItem(VISUAL_MODE_KEY, visualMode);
+  }, [visualMode]);
+
+  const toggleVisualMode = () => {
+    setVisualMode((m) => (m === 'dark' ? 'light' : 'dark'));
+  };
+
+  const toggleLanguage = () => {
+    const next = i18n.language === 'hi' ? 'en' : 'hi';
+    i18n.changeLanguage(next);
+  };
+
   const login = async (email, password) => {
     const { data } = await authAPI.login(email, password);
     localStorage.setItem(TOKEN_KEY, data.token);
     setAuthToken(data.token);
     setUserProfile(data.user);
-    setAgeGroupTheme(data.user.ageGroup || 'adult');
+    setTheme(data.user.ageGroup || 'adult');
     return data.user;
   };
 
@@ -81,7 +77,7 @@ export const GlobalProvider = ({ children }) => {
     localStorage.setItem(TOKEN_KEY, data.token);
     setAuthToken(data.token);
     setUserProfile(data.user);
-    setAgeGroupTheme(data.user.ageGroup || 'adult');
+    setTheme(data.user.ageGroup || 'adult');
     return data.user;
   };
 
@@ -94,7 +90,7 @@ export const GlobalProvider = ({ children }) => {
   const updateConfig = async (updates) => {
     const { data } = await userAPI.updateConfig(updates);
     setUserProfile((p) => ({ ...p, ...data.user }));
-    if (updates.ageGroup) setAgeGroupTheme(updates.ageGroup);
+    if (updates.ageGroup) setTheme(updates.ageGroup);
     return data.user?.config;
   };
 
@@ -115,7 +111,7 @@ export const GlobalProvider = ({ children }) => {
     try {
       const { data } = await userAPI.getProfile();
       setUserProfile(data.user);
-      setAgeGroupTheme(data.user.ageGroup || 'adult');
+      setTheme(data.user.ageGroup || 'adult');
     } catch {
       /* keep existing */
     }
@@ -123,14 +119,11 @@ export const GlobalProvider = ({ children }) => {
 
   const value = {
     userProfile,
-    // Theme for Age Group (Kids/Adults)
-    theme: ageGroupTheme, 
-    setTheme: setAgeGroupTheme,
-    // Theme for Visual Mode (Dark/Light)
+    theme,
+    setTheme,
     visualMode,
     toggleVisualMode,
     toggleLanguage,
-    // Auth & User
     loading,
     isSignedIn: !!userProfile,
     login,

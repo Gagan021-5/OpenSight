@@ -14,6 +14,7 @@ function toSafeUser(user) {
     email: user.email,
     name: user.name,
     ageGroup: user.ageGroup,
+    language: user.language,
     config: user.config,
   };
 }
