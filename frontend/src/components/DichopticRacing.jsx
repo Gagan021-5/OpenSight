@@ -1,408 +1,234 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Car, AlertTriangle, Settings, Play, MoveDown, Maximize, Minimize, Pause, RotateCcw } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Car, AlertTriangle, Settings, Play, Pause, RotateCcw } from 'lucide-react';
+import useTherapyColors from '../hooks/useTherapyColors';
+import { useGlobal } from '../context/GlobalContext';
 
-// INTERNAL RESOLUTION (Fixed for Physics)
-const INTERNAL_WIDTH = 400;
-const INTERNAL_HEIGHT = 600;
+const W = 400, H = 600;
+const CAR_W = 50, CAR_H = 80, OBS_W = 50, OBS_H = 50, LANES = 3, LANE_W = W / LANES;
+const INIT_SPEED = 300, MAX_SPEED = 800, INC = 20;
 
-// GAME CONFIGURATION (Relative to Internal Resolution)
-const CAR_WIDTH = 50; 
-const CAR_HEIGHT = 80;
-const OBSTACLE_WIDTH = 50;
-const OBSTACLE_HEIGHT = 50;
-const LANE_COUNT = 3;
-const LANE_WIDTH = INTERNAL_WIDTH / LANE_COUNT;
+function laneCenter(lane) {
+  return lane * LANE_W + LANE_W / 2 - CAR_W / 2;
+}
 
-// SPEED SETTINGS
-const INITIAL_SPEED = 300; 
-const MAX_SPEED = 800; 
-const SPEED_INCREMENT = 20; 
+export default function DichopticRacing({ onGameEnd, isFullScreen }) {
+  const { weakEye } = useGlobal();
+  const [intensity, setIntensity] = useState(1);
+  const colors = useTherapyColors(weakEye, intensity);
 
-const DichopticRacing = () => {
-  const canvasRef = useRef(null);
-  const containerRef = useRef(null); 
-  
-  const [gameState, setGameState] = useState('START'); 
+  const [gameState, setGameState] = useState('START');
   const [score, setScore] = useState(0);
-  const [displaySpeed, setDisplaySpeed] = useState(1); 
-  const [isFullScreen, setIsFullScreen] = useState(false);
-  
+  const [displaySpeed, setDisplaySpeed] = useState(1);
   const [currentLane, setCurrentLane] = useState(1);
-  const [redIntensity, setRedIntensity] = useState(1.0); 
+  const startTimeRef = useRef(null);
 
-  const requestRef = useRef();
-  const lastTimeRef = useRef(0); 
-  const scoreRef = useRef(0);
-  const speedRef = useRef(INITIAL_SPEED);
-  const obstaclesRef = useRef([]);
-  const laneOffsetRef = useRef(0); 
-  const currentLaneRef = useRef(1);
+  const rAf = useRef();
+  const lastT = useRef(0);
+  const scoreR = useRef(0);
+  const speedR = useRef(INIT_SPEED);
+  const obsR = useRef([]);
+  const laneOffR = useRef(0);
+  const laneCurR = useRef(1);
+  const canvasRef = useRef(null);
 
-  const getLaneCenter = (laneIndex) => {
-    return (laneIndex * LANE_WIDTH) + (LANE_WIDTH / 2) - (CAR_WIDTH / 2);
-  };
-
-  // FULL SCREEN LOGIC
-  const toggleFullScreen = async () => {
-    if (!document.fullscreenElement) {
-      try {
-        await containerRef.current.requestFullscreen();
-        setIsFullScreen(true);
-      } catch (err) {
-        console.error("Error attempting to enable full-screen mode:", err);
-      }
-    } else {
-      if (document.exitFullscreen) {
-        await document.exitFullscreen();
-        setIsFullScreen(false);
-      }
-    }
-  };
-
-  useEffect(() => {
-    const handleFsChange = () => {
-      setIsFullScreen(!!document.fullscreenElement);
-    };
-    document.addEventListener('fullscreenchange', handleFsChange);
-    return () => document.removeEventListener('fullscreenchange', handleFsChange);
-  }, []);
-
-  // CONTROLS
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.code === 'Space') {
-        e.preventDefault(); 
-        setGameState(prev => {
-          if (prev === 'PLAYING') return 'PAUSED';
-          if (prev === 'PAUSED') {
-             lastTimeRef.current = performance.now();
-             return 'PLAYING';
-          }
-          return prev;
-        });
-        return;
-      }
-
-      if (gameState !== 'PLAYING') return;
-      
-      if (e.key === 'ArrowLeft') {
-        if (currentLaneRef.current > 0) {
-          const newLane = currentLaneRef.current - 1;
-          currentLaneRef.current = newLane;
-          setCurrentLane(newLane);
-        }
-      } else if (e.key === 'ArrowRight') {
-        if (currentLaneRef.current < LANE_COUNT - 1) {
-          const newLane = currentLaneRef.current + 1;
-          currentLaneRef.current = newLane;
-          setCurrentLane(newLane);
-        }
-      }
-    };
-    
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [gameState]);
-
-  // MAIN GAME LOOP (Time-Based)
-  const updateGame = (time) => {
-    if (gameState !== 'PLAYING') return;
-
-    const deltaTime = (time - lastTimeRef.current) / 1000;
-    lastTimeRef.current = time;
-
-    if (deltaTime > 0.1) {
-      requestRef.current = requestAnimationFrame(updateGame);
-      return;
-    }
-
-    const moveDistance = speedRef.current * deltaTime;
-
-    // 1. Animate Lanes
-    laneOffsetRef.current = (laneOffsetRef.current - moveDistance) % 80;
-
-    // 2. Move Obstacles
-    obstaclesRef.current.forEach(obs => {
-      obs.y += moveDistance;
-    });
-
-    // 3. Cleanup & Scoring
-    if (obstaclesRef.current.length > 0 && obstaclesRef.current[0].y > INTERNAL_HEIGHT) {
-      obstaclesRef.current.shift();
-      scoreRef.current += 10;
-      setScore(scoreRef.current);
-      
-      if (scoreRef.current % 100 === 0 && speedRef.current < MAX_SPEED) {
-        speedRef.current += SPEED_INCREMENT;
-        setDisplaySpeed(Math.floor(speedRef.current / 50)); 
-      }
-    }
-
-    // 4. Spawn Obstacles
-    const lastObs = obstaclesRef.current[obstaclesRef.current.length - 1];
-    const minGap = 250 + (speedRef.current * 0.2); 
-
-    if (!lastObs || lastObs.y > minGap) { 
-      if (Math.random() < 0.05) { 
-        const lane = Math.floor(Math.random() * LANE_COUNT); 
-        const obsX = (lane * LANE_WIDTH) + (LANE_WIDTH / 2) - (OBSTACLE_WIDTH / 2);
-        obstaclesRef.current.push({ 
-          x: obsX, 
-          y: -100, 
-          width: OBSTACLE_WIDTH, 
-          height: OBSTACLE_HEIGHT,
-        });
-      }
-    }
-
-    // 5. Collision Detection
-    const playerX = getLaneCenter(currentLaneRef.current);
-    const playerRect = { x: playerX + 10, y: INTERNAL_HEIGHT - 110, w: CAR_WIDTH - 20, h: CAR_HEIGHT - 20 };
-    
-    for (let i = 0; i < obstaclesRef.current.length; i++) {
-      const obs = obstaclesRef.current[i];
-      const obsRect = { x: obs.x + 5, y: obs.y + 5, w: obs.width - 10, h: obs.height - 10 };
-
-      if (
-        playerRect.x < obsRect.x + obsRect.w &&
-        playerRect.x + playerRect.w > obsRect.x &&
-        playerRect.y < obsRect.y + obsRect.h &&
-        playerRect.y + playerRect.h > obsRect.y
-      ) {
-        // --- CRASH LOGIC ---
-        setGameState('GAMEOVER');
-        
-        // Remove THIS specific obstacle so we don't hit it again immediately on resume
-        obstaclesRef.current.splice(i, 1);
-        
-        cancelAnimationFrame(requestRef.current);
-        return; 
-      }
-    }
-
-    draw();
-    requestRef.current = requestAnimationFrame(updateGame);
-  };
-
-  // DRAW FUNCTION
-  const draw = () => {
-    const ctx = canvasRef.current.getContext('2d');
-    
-    // Clear
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(0, 0, INTERNAL_WIDTH, INTERNAL_HEIGHT);
-
-    // --- DRAW LANES (Blue - Right Eye) ---
-    ctx.strokeStyle = '#0000FF'; 
-    ctx.lineWidth = 4;
-    ctx.setLineDash([40, 40]); 
-    ctx.lineDashOffset = laneOffsetRef.current;
-
-    for (let i = 1; i < LANE_COUNT; i++) {
-        ctx.beginPath();
-        ctx.moveTo(LANE_WIDTH * i, -50);
-        ctx.lineTo(LANE_WIDTH * i, INTERNAL_HEIGHT + 50);
-        ctx.stroke();
-    }
-    
-    ctx.setLineDash([]); 
-
-    // --- DRAW PLAYER (Red - Left Eye) ---
-    const pX = getLaneCenter(currentLaneRef.current);
-    const pY = INTERNAL_HEIGHT - 120;
-    
-    ctx.fillStyle = `rgba(255, 0, 0, ${redIntensity})`;
-    ctx.fillRect(pX, pY, CAR_WIDTH, CAR_HEIGHT);
-    // Shading
-    ctx.fillStyle = `rgba(0, 0, 0, 0.3)`;
-    ctx.fillRect(pX + 5, pY + 10, CAR_WIDTH - 10, 15); 
-    ctx.fillRect(pX + 5, pY + 50, CAR_WIDTH - 10, 10); 
-
-    // --- DRAW OBSTACLES (Red - Left Eye) ---
-    obstaclesRef.current.forEach(obs => {
-      ctx.fillStyle = `rgba(255, 0, 0, ${redIntensity})`;
-      ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
-      ctx.strokeStyle = `rgba(100, 0, 0, ${redIntensity})`;
-      ctx.lineWidth = 3;
-      ctx.strokeRect(obs.x, obs.y, obs.width, obs.height);
-    });
-  };
-
-  // Resets Everything (For 'Start' or manual 'Restart')
-  const resetGame = () => {
-    scoreRef.current = 0;
-    speedRef.current = INITIAL_SPEED;
-    obstaclesRef.current = [];
-    currentLaneRef.current = 1;
-    laneOffsetRef.current = 0;
-    lastTimeRef.current = performance.now(); 
-    
+  const reset = () => {
+    scoreR.current = 0;
+    speedR.current = INIT_SPEED;
+    obsR.current = [];
+    laneCurR.current = 1;
+    laneOffR.current = 0;
+    lastT.current = performance.now();
     setScore(0);
     setDisplaySpeed(1);
     setCurrentLane(1);
     setGameState('PLAYING');
-    
-    requestRef.current = requestAnimationFrame(updateGame);
+    startTimeRef.current = Date.now();
   };
 
-  // Just continues the loop (For 'Resume' after crash)
-  const resumeGame = () => {
-    lastTimeRef.current = performance.now(); // Reset time delta so we don't jump
-    setGameState('PLAYING');
-    requestRef.current = requestAnimationFrame(updateGame);
+  const endGame = () => {
+    setGameState('GAMEOVER');
+    if (onGameEnd && startTimeRef.current) onGameEnd(scoreR.current, (Date.now() - startTimeRef.current) / 1000);
+  };
+
+  const draw = () => {
+    const ctx = canvasRef.current?.getContext('2d');
+    if (!ctx) return;
+    ctx.fillStyle = colors.background;
+    ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = colors.lock;
+    ctx.lineWidth = 4;
+    ctx.setLineDash([40, 40]);
+    ctx.lineDashOffset = laneOffR.current;
+    for (let i = 1; i < LANES; i++) {
+      ctx.beginPath();
+      ctx.moveTo(LANE_W * i, -50);
+      ctx.lineTo(LANE_W * i, H + 50);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    const pX = laneCenter(laneCurR.current), pY = H - 120;
+    ctx.fillStyle = colors.target;
+    ctx.fillRect(pX, pY, CAR_W, CAR_H);
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.fillRect(pX + 5, pY + 10, CAR_W - 10, 15);
+    ctx.fillRect(pX + 5, pY + 50, CAR_W - 10, 10);
+    obsR.current.forEach((o) => {
+      ctx.fillStyle = colors.target;
+      ctx.fillRect(o.x, o.y, OBS_W, OBS_H);
+      ctx.strokeStyle = colors.lock;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(o.x, o.y, OBS_W, OBS_H);
+    });
+  };
+
+  const update = (time) => {
+    if (gameState !== 'PLAYING') return;
+    const dt = Math.min((time - lastT.current) / 1000, 0.1);
+    lastT.current = time;
+    const move = speedR.current * dt;
+    laneOffR.current = (laneOffR.current - move) % 80;
+    obsR.current.forEach((o) => { o.y += move; });
+    if (obsR.current[0]?.y > H) {
+      obsR.current.shift();
+      scoreR.current += 10;
+      setScore(scoreR.current);
+      if (scoreR.current % 100 === 0 && speedR.current < MAX_SPEED) {
+        speedR.current += INC;
+        setDisplaySpeed(Math.floor(speedR.current / 50));
+      }
+    }
+    const last = obsR.current[obsR.current.length - 1];
+    const gap = 250 + speedR.current * 0.2;
+    if (!last || last.y > gap) {
+      if (Math.random() < 0.05) {
+        const L = Math.floor(Math.random() * LANES);
+        obsR.current.push({
+          x: L * LANE_W + LANE_W / 2 - OBS_W / 2,
+          y: -100,
+          width: OBS_W,
+          height: OBS_H,
+        });
+      }
+    }
+    const pX = laneCenter(laneCurR.current) + 10, pY = H - 110, pW = CAR_W - 20, pH = CAR_H - 20;
+    for (let i = 0; i < obsR.current.length; i++) {
+      const o = obsR.current[i];
+      const ox = o.x + 5, oy = o.y + 5, ow = OBS_W - 10, oh = OBS_H - 10;
+      if (pX < ox + ow && pX + pW > ox && pY < oy + oh && pY + pH > oy) {
+        setGameState('GAMEOVER');
+        obsR.current.splice(i, 1);
+        if (onGameEnd && startTimeRef.current) onGameEnd(scoreR.current, (Date.now() - startTimeRef.current) / 1000);
+        cancelAnimationFrame(rAf.current);
+        return;
+      }
+    }
+    draw();
+    rAf.current = requestAnimationFrame(update);
   };
 
   useEffect(() => {
+    const h = (e) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        setGameState((p) => (p === 'PLAYING' ? 'PAUSED' : p === 'PAUSED' ? 'PLAYING' : p));
+        if (gameState === 'PAUSED') lastT.current = performance.now();
+        return;
+      }
+      if (gameState !== 'PLAYING') return;
+      if (e.key === 'ArrowLeft' && laneCurR.current > 0) {
+        laneCurR.current--;
+        setCurrentLane(laneCurR.current);
+      } else if (e.key === 'ArrowRight' && laneCurR.current < LANES - 1) {
+        laneCurR.current++;
+        setCurrentLane(laneCurR.current);
+      }
+    };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [gameState]);
+
+  useEffect(() => {
     if (gameState === 'PLAYING') {
-      lastTimeRef.current = performance.now();
-      requestRef.current = requestAnimationFrame(updateGame);
-    } else {
-      draw(); 
-    }
-    return () => cancelAnimationFrame(requestRef.current);
-  }, [gameState, redIntensity, currentLane]);
+      lastT.current = performance.now();
+      startTimeRef.current = startTimeRef.current || Date.now();
+      rAf.current = requestAnimationFrame(update);
+    } else draw();
+    return () => cancelAnimationFrame(rAf.current);
+  }, [gameState, intensity, currentLane, colors]);
 
-  return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-neutral-900 font-sans text-white p-4">
-      
-      {!isFullScreen && (
-        <div className="flex items-center gap-3 mb-6">
-          <Car className="text-red-600 w-8 h-8" />
-          <h1 className="text-3xl font-bold tracking-tighter">
-            <span className="text-red-600">RED</span> RACER <span className="text-blue-600 text-sm opacity-50">(RESPONSIVE)</span>
-          </h1>
-        </div>
-      )}
-
-      <div className="flex gap-8 items-start justify-center w-full">
-        
-        {/* GAME CONTAINER */}
-        <div 
-          ref={containerRef}
-          className={`relative bg-neutral-950 flex items-center justify-center transition-all duration-300 ${
-            isFullScreen 
-              ? 'fixed inset-0 w-screen h-screen z-50' 
-              : 'border-4 border-gray-800 rounded-lg shadow-[0_0_50px_rgba(255,0,0,0.2)]'
-          }`}
-        >
-          <button 
-            onClick={toggleFullScreen}
-            className="absolute top-4 right-4 p-2 bg-gray-800/50 hover:bg-gray-700 rounded-full text-white z-50 transition hover:scale-110"
-            title="Toggle Fullscreen"
-          >
-            {isFullScreen ? <Minimize size={24} /> : <Maximize size={24} />}
-          </button>
-
-          <canvas
-            ref={canvasRef}
-            width={INTERNAL_WIDTH}
-            height={INTERNAL_HEIGHT}
-            className={`bg-black block shadow-2xl transition-all duration-300 ${
-              isFullScreen 
-                ? 'max-h-screen max-w-full aspect-[2/3]' 
-                : 'rounded' 
-            }`}
-          />
-
-          {/* OVERLAY: Centered within the container */}
-          {gameState !== 'PLAYING' && (
-            <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-40 backdrop-blur-sm">
-              
-              {gameState === 'GAMEOVER' && (
-                <div className="text-center mb-6 animate-pulse">
-                  <AlertTriangle className="mx-auto text-red-500 w-16 h-16 mb-2" />
-                  <h2 className="text-4xl font-black text-white">CRASHED!</h2>
-                  <p className="text-xl text-red-400">Score: {score}</p>
-                </div>
-              )}
-
-              {gameState === 'PAUSED' && (
-                <div className="text-center mb-6">
-                  <Pause className="mx-auto text-blue-500 w-16 h-16 mb-2" />
-                  <h2 className="text-4xl font-black text-white">PAUSED</h2>
-                </div>
-              )}
-              
-              <div className="flex flex-col gap-3">
-                {/* PRIMARY ACTION: Resume or Start */}
-                <button
-                  onClick={() => {
-                      if (gameState === 'GAMEOVER' || gameState === 'PAUSED') {
-                          resumeGame();
-                      } else {
-                          resetGame();
-                      }
-                  }}
-                  className="flex items-center justify-center gap-2 px-8 py-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-full text-xl shadow-lg transition-transform hover:scale-105 active:scale-95"
-                >
-                  <Play fill="currentColor" />
-                  {gameState === 'START' ? 'START ENGINE' : 'CONTINUE'}
-                </button>
-
-                {/* SECONDARY ACTION: Restart (Only visible if crashed/paused) */}
-                {(gameState === 'GAMEOVER' || gameState === 'PAUSED') && (
-                    <button
-                        onClick={resetGame}
-                        className="flex items-center justify-center gap-2 px-6 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 font-bold rounded-full text-sm transition-colors"
-                    >
-                        <RotateCcw size={16} />
-                        Restart from 0
-                    </button>
-                )}
-              </div>
-
+  if (isFullScreen) {
+    return (
+      <div className="h-full w-full flex items-center justify-center relative">
+        <canvas ref={canvasRef} width={W} height={H} className="max-h-full max-w-full" style={{ objectFit: 'contain' }} />
+        <div className="absolute top-2 left-2 font-mono font-bold text-white drop-shadow-lg z-10">SCORE: {score}</div>
+        {gameState !== 'PLAYING' && (
+          <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-10">
+            {gameState === 'GAMEOVER' && (<div className="text-center mb-4"><AlertTriangle className="mx-auto w-12 h-12 mb-2" style={{ color: colors.target }} /><h2 className="text-2xl font-black">CRASHED</h2><p className="text-lg" style={{ color: colors.target }}>Score: {score}</p></div>)}
+            {gameState === 'PAUSED' && (<div className="text-center mb-4"><Pause className="mx-auto w-12 h-12 mb-2" style={{ color: colors.lock }} /><h2 className="text-2xl font-black">PAUSED</h2></div>)}
+            <div className="flex flex-col gap-2">
+              <button onClick={() => { if (gameState === 'START' || gameState === 'GAMEOVER') reset(); else if (gameState === 'PAUSED') { lastT.current = performance.now(); setGameState('PLAYING'); } }} className="flex items-center gap-2 px-6 py-3 rounded-full font-bold" style={{ backgroundColor: colors.target, color: '#fff' }}><Play fill="currentColor" /> {gameState === 'START' ? 'Start' : gameState === 'PAUSED' ? 'Continue' : 'Restart'}</button>
+              {(gameState === 'GAMEOVER' || gameState === 'PAUSED') && (<button onClick={reset} className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-600 hover:bg-slate-500 text-sm font-bold"><RotateCcw size={14} /> Restart</button>)}
             </div>
-          )}
-
-          <div className="absolute top-4 left-4 text-white font-mono font-bold text-xl drop-shadow-md z-30 pointer-events-none">
-            SCORE: {score}
-          </div>
-        </div>
-
-        {/* CONTROLS SIDEBAR (Hidden in Fullscreen) */}
-        {!isFullScreen && (
-          <div className="w-64 bg-neutral-800 p-6 rounded-xl border border-neutral-700 h-[600px] flex flex-col">
-            <div className="flex items-center gap-2 mb-6 text-gray-400 uppercase text-xs font-bold tracking-widest">
-              <Settings size={14} />
-              Therapy Configuration
-            </div>
-
-            <div className="space-y-8 flex-1">
-              <div>
-                <label className="block text-sm font-medium text-red-400 mb-2">
-                  Left Eye Challenge
-                </label>
-                <input 
-                  type="range" 
-                  min="0.1" 
-                  max="1.0" 
-                  step="0.1"
-                  value={redIntensity}
-                  onChange={(e) => setRedIntensity(parseFloat(e.target.value))}
-                  className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-red-600"
-                />
-                <div className="flex justify-between text-xs text-gray-500 mt-2">
-                  <span>Dim</span>
-                  <span>Bright</span>
-                </div>
-              </div>
-
-              <div className="bg-black/30 p-4 rounded text-sm text-gray-400 space-y-2">
-                <p>Press <strong>SPACE</strong> to Pause.</p>
-                <p>Use <strong>Arrow Keys</strong> to Swap Lanes.</p>
-                <p className="text-yellow-500 text-xs mt-2">Speed Level: {displaySpeed}</p>
-              </div>
-            </div>
-            
-             <div className="text-center text-xs text-gray-500 mt-auto">
-               <MoveDown className="mx-auto mb-1 opacity-50" />
-               Arrow Keys to Move
-             </div>
           </div>
         )}
       </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-center min-h-screen bg-slate-900 text-white p-4">
+      <div className="flex gap-3 mb-4">
+        <Car className="w-8 h-8" style={{ color: colors.target }} />
+        <h1 className="text-2xl font-bold">Racing</h1>
+      </div>
+      <div className="flex gap-6 items-start max-w-4xl mx-auto w-full">
+        <div className="relative rounded-lg border-2 border-slate-700 overflow-hidden bg-slate-950 max-w-full">
+          <canvas ref={canvasRef} width={W} height={H} className="block max-w-full max-h-[70vh] object-contain" />
+          <div className="absolute top-3 left-3 font-mono font-bold text-lg">SCORE: {score}</div>
+          {gameState !== 'PLAYING' && (
+            <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center">
+              {gameState === 'GAMEOVER' && (
+                <div className="text-center mb-4">
+                  <AlertTriangle className="mx-auto w-12 h-12 mb-2" style={{ color: colors.target }} />
+                  <h2 className="text-2xl font-black">CRASHED</h2>
+                  <p className="text-lg" style={{ color: colors.target }}>Score: {score}</p>
+                </div>
+              )}
+              {gameState === 'PAUSED' && (
+                <div className="text-center mb-4">
+                  <Pause className="mx-auto w-12 h-12 mb-2" style={{ color: colors.lock }} />
+                  <h2 className="text-2xl font-black">PAUSED</h2>
+                </div>
+              )}
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => {
+                    if (gameState === 'START' || gameState === 'GAMEOVER') reset();
+                    else if (gameState === 'PAUSED') { lastT.current = performance.now(); setGameState('PLAYING'); }
+                  }}
+                  className="flex items-center gap-2 px-6 py-3 rounded-full font-bold"
+                  style={{ backgroundColor: colors.target, color: '#fff' }}
+                >
+                  <Play fill="currentColor" /> {gameState === 'START' ? 'Start' : gameState === 'PAUSED' ? 'Continue' : 'Restart'}
+                </button>
+                {(gameState === 'GAMEOVER' || gameState === 'PAUSED') && (
+                  <button onClick={reset} className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-600 hover:bg-slate-500 text-sm font-bold">
+                    <RotateCcw size={14} /> Restart
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="w-52 bg-slate-800 p-4 rounded-xl border border-slate-600 space-y-4">
+          <div className="flex items-center gap-2 text-slate-400 font-semibold text-sm"><Settings size={14} /> Config</div>
+          <div>
+            <label className="block text-sm text-slate-400 mb-1">Target intensity</label>
+            <input type="range" min="0.1" max="1" step="0.1" value={intensity} onChange={(e) => setIntensity(parseFloat(e.target.value))} className="w-full accent-indigo-500" />
+          </div>
+          <p className="text-slate-400 text-sm">SPACE: Pause. Arrows: Lanes. Speed: {displaySpeed}</p>
+        </div>
+      </div>
     </div>
   );
-};
-
-export default DichopticRacing;
+}

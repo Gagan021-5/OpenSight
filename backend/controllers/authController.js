@@ -1,67 +1,75 @@
-import { getAuth } from '@clerk/express';
-import { clerkClient } from '@clerk/express';
+import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 
+const JWT_SECRET = process.env.JWT_SECRET || 'opensight-dev-secret-change-in-production';
+const JWT_EXPIRES = process.env.JWT_EXPIRES || '7d';
+
+function signToken(userId) {
+  return jwt.sign({ userId }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
+}
+
+function toSafeUser(user) {
+  return {
+    id: user._id,
+    email: user.email,
+    name: user.name,
+    ageGroup: user.ageGroup,
+    config: user.config,
+  };
+}
+
 /**
- * Sync Clerk user to MongoDB
- * Creates user profile if doesn't exist
+ * POST /auth/register
+ * Body: { email, password, name, ageGroup?, config? }
  */
-export const syncUser = async (req, res) => {
+export const register = async (req, res) => {
   try {
-    const { userId } = getAuth(req);
-    const { ageGroup, config } = req.body;
-    
-    // Check if user exists
-    let user = await User.findOne({ clerkId: userId });
-    
-    if (!user) {
-      // Get Clerk user data
-      const clerkUser = await clerkClient.users.getUser(userId);
-      
-      // Create new user profile
-      user = new User({
-        clerkId: userId,
-        email: clerkUser.emailAddresses[0].emailAddress,
-        name: `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || 'User',
-        ageGroup: ageGroup || 'adult',
-        config: config || {
-          weakEye: 'left',
-          condition: 'amblyopia',
-          difficulty: 5
-        }
-      });
-      
-      await user.save();
+    const { email, password, name, ageGroup, config } = req.body;
+    if (!email || !password || !name) {
+      return res.status(400).json({ error: 'Email, password, and name are required' });
     }
-    
-    res.status(200).json({
-      user: {
-        id: user._id,
-        clerkId: user.clerkId,
-        email: user.email,
-        name: user.name,
-        ageGroup: user.ageGroup,
-        config: user.config
-      }
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    }
+    const existing = await User.findOne({ email: email.toLowerCase() });
+    if (existing) {
+      return res.status(400).json({ error: 'Email already registered' });
+    }
+    const user = new User({
+      email: email.toLowerCase(),
+      password,
+      name: (name || '').trim() || 'User',
+      ageGroup: ageGroup === 'kid' ? 'kid' : 'adult',
+      config: config || { weakEye: 'left', condition: 'amblyopia', difficulty: 5 },
     });
-  } catch (error) {
-    console.error('Sync error:', error);
-    res.status(500).json({ error: 'Sync failed' });
+    await user.save();
+    const token = signToken(user._id);
+    res.status(201).json({ token, user: toSafeUser(user) });
+  } catch (err) {
+    console.error('Register error:', err);
+    res.status(500).json({ error: 'Registration failed' });
   }
 };
 
 /**
- * Get current user profile
+ * POST /auth/login
+ * Body: { email, password }
  */
-export const getCurrentUser = (req, res) => {
-  res.json({
-    user: {
-      id: req.user._id,
-      clerkId: req.user.clerkId,
-      email: req.user.email,
-      name: req.user.name,
-      ageGroup: req.user.ageGroup,
-      config: req.user.config
+export const login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
     }
-  });
+    const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
+    if (!user || !(await user.comparePassword(password))) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+    const token = signToken(user._id);
+    const safe = toSafeUser(user);
+    res.json({ token, user: safe });
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).json({ error: 'Login failed' });
+  }
 };

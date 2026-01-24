@@ -2,19 +2,11 @@ import axios from 'axios';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-/**
- * Create axios instance with default config
- */
 const api = axios.create({
   baseURL: API_BASE,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  headers: { 'Content-Type': 'application/json' },
 });
 
-/**
- * Add auth token to requests
- */
 export const setAuthToken = (token) => {
   if (token) {
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -23,31 +15,20 @@ export const setAuthToken = (token) => {
   }
 };
 
-/**
- * Auth API calls
- */
 export const authAPI = {
-  sync: (data = {}) => api.post('/auth/sync', data),
-  getMe: () => api.get('/auth/me'),
+  register: (data) => api.post('/auth/register', data),
+  login: (email, password) => api.post('/auth/login', { email, password }),
 };
 
-/**
- * User API calls
- */
 export const userAPI = {
-  updateConfig: (config) => api.patch('/user/config', config),
   getProfile: () => api.get('/user/profile'),
+  updateConfig: (config) => api.patch('/user/config', config),
 };
 
-/**
- * Score API calls
- */
-export const scoreAPI = {
-  submit: (gameType, score, duration) => 
-    api.post('/scores', { gameType, score, duration }),
-  getAll: (limit = 50) => api.get(`/scores?limit=${limit}`),
-  getStats: (gameType = null) => 
-    api.get(gameType ? `/scores/stats/${gameType}` : '/scores/stats'),
+export const gameAPI = {
+  submitScore: (game, score, duration) =>
+    api.post('/game/score', { game, score, duration }),
+  getHistory: (limit = 50) => api.get(`/game/history?limit=${limit}`),
 };
 
 export default api;

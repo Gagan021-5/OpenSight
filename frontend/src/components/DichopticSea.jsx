@@ -1,437 +1,220 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Ship, AlertTriangle, Settings, Play, MoveDown, Maximize, Minimize, Pause } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Ship, AlertTriangle, Settings, Play, Pause } from 'lucide-react';
+import useTherapyColors from '../hooks/useTherapyColors';
+import { useGlobal } from '../context/GlobalContext';
 
-// INTERNAL RESOLUTION (Fixed for Physics)
-const INTERNAL_WIDTH = 400;
-const INTERNAL_HEIGHT = 600;
+const W = 400, H = 600;
+const BOAT_W = 60, BOAT_H = 90, OBS_W = 60, OBS_H = 60, LANES = 3, LANE_W = W / LANES;
+const INIT_SPEED = 250, MAX_SPEED = 700, INC = 25, WAVE_X = 150;
 
-// GAME CONFIGURATION
-const BOAT_WIDTH = 60; 
-const BOAT_HEIGHT = 90;
-const OBSTACLE_WIDTH = 60;
-const OBSTACLE_HEIGHT = 60;
-const LANE_COUNT = 3;
-const LANE_WIDTH = INTERNAL_WIDTH / LANE_COUNT;
+function laneCenter(lane) {
+  return lane * LANE_W + LANE_W / 2 - BOAT_W / 2;
+}
 
-// SPEED SETTINGS
-const INITIAL_SPEED = 250; // Vertical speed of obstacles
-const MAX_SPEED = 700; 
-const SPEED_INCREMENT = 25;
-const WAVE_SPEED_X = 150; // Horizontal speed of the background waves
+export default function DichopticSea({ onGameEnd, isFullScreen }) {
+  const { weakEye } = useGlobal();
+  const [intensity, setIntensity] = useState(1);
+  const colors = useTherapyColors(weakEye, intensity);
 
-const DichopticSea = () => {
-  const canvasRef = useRef(null);
-  const containerRef = useRef(null); 
-  
-  const [gameState, setGameState] = useState('START'); 
+  const [gameState, setGameState] = useState('START');
   const [score, setScore] = useState(0);
-  const [displaySpeed, setDisplaySpeed] = useState(1); 
-  const [isFullScreen, setIsFullScreen] = useState(false);
-  
+  const [displaySpeed, setDisplaySpeed] = useState(1);
   const [currentLane, setCurrentLane] = useState(1);
-  const [redIntensity, setRedIntensity] = useState(1.0); 
+  const startTimeRef = useRef(null);
 
-  const requestRef = useRef();
-  const lastTimeRef = useRef(0); 
-  const scoreRef = useRef(0);
-  const speedRef = useRef(INITIAL_SPEED);
-  const obstaclesRef = useRef([]);
-  // Tracks horizontal movement for waves
-  const waveHorizontalOffsetRef = useRef(0); 
-  const currentLaneRef = useRef(1);
-
-  const getLaneCenter = (laneIndex) => {
-    return (laneIndex * LANE_WIDTH) + (LANE_WIDTH / 2) - (BOAT_WIDTH / 2);
-  };
-
-  // FULL SCREEN LOGIC
-  const toggleFullScreen = async () => {
-    if (!document.fullscreenElement) {
-      try {
-        await containerRef.current.requestFullscreen();
-        setIsFullScreen(true);
-      } catch (err) {
-        console.error("Error attempting to enable full-screen mode:", err);
-      }
-    } else {
-      if (document.exitFullscreen) {
-        await document.exitFullscreen();
-        setIsFullScreen(false);
-      }
-    }
-  };
-
-  useEffect(() => {
-    const handleFsChange = () => {
-      setIsFullScreen(!!document.fullscreenElement);
-    };
-    document.addEventListener('fullscreenchange', handleFsChange);
-    return () => document.removeEventListener('fullscreenchange', handleFsChange);
-  }, []);
-
-  // CONTROLS
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.code === 'Space') {
-        e.preventDefault(); 
-        setGameState(prev => {
-          if (prev === 'PLAYING') return 'PAUSED';
-          if (prev === 'PAUSED') {
-             lastTimeRef.current = performance.now();
-             return 'PLAYING';
-          }
-          return prev;
-        });
-        return;
-      }
-
-      if (gameState !== 'PLAYING') return;
-      
-      if (e.key === 'ArrowLeft') {
-        if (currentLaneRef.current > 0) {
-          const newLane = currentLaneRef.current - 1;
-          currentLaneRef.current = newLane;
-          setCurrentLane(newLane);
-        }
-      } else if (e.key === 'ArrowRight') {
-        if (currentLaneRef.current < LANE_COUNT - 1) {
-          const newLane = currentLaneRef.current + 1;
-          currentLaneRef.current = newLane;
-          setCurrentLane(newLane);
-        }
-      }
-    };
-    
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [gameState]);
-
-  // MAIN GAME LOOP (Time-Based)
-  const updateGame = (time) => {
-    if (gameState !== 'PLAYING') return;
-
-    const deltaTime = (time - lastTimeRef.current) / 1000;
-    lastTimeRef.current = time;
-
-    if (deltaTime > 0.1) {
-      requestRef.current = requestAnimationFrame(updateGame);
-      return;
-    }
-
-    // Calculate distances for this frame
-    const verticalMoveDistance = speedRef.current * deltaTime;
-    const horizontalWaveDistance = WAVE_SPEED_X * deltaTime;
-
-    // 1. Animate Horizontal Waves
-    // We wrap around a 200px pattern width to keep numbers small
-    waveHorizontalOffsetRef.current = (waveHorizontalOffsetRef.current + horizontalWaveDistance) % 200;
-
-    // 2. Move Obstacles Vertically
-    obstaclesRef.current.forEach(obs => {
-      obs.y += verticalMoveDistance;
-    });
-
-    // 3. Cleanup & Scoring
-    if (obstaclesRef.current.length > 0 && obstaclesRef.current[0].y > INTERNAL_HEIGHT) {
-      obstaclesRef.current.shift();
-      scoreRef.current += 10;
-      setScore(scoreRef.current);
-      
-      if (scoreRef.current % 100 === 0 && speedRef.current < MAX_SPEED) {
-        speedRef.current += SPEED_INCREMENT;
-        setDisplaySpeed(Math.floor(speedRef.current / 50)); 
-      }
-    }
-
-    // 4. Spawn Obstacles
-    const lastObs = obstaclesRef.current[obstaclesRef.current.length - 1];
-    const minGap = 280 + (speedRef.current * 0.25); 
-
-    if (!lastObs || lastObs.y > minGap) { 
-      if (Math.random() < 0.05) { 
-        const lane = Math.floor(Math.random() * LANE_COUNT); 
-        const obsX = (lane * LANE_WIDTH) + (LANE_WIDTH / 2) - (OBSTACLE_WIDTH / 2);
-        const type = Math.random() > 0.5 ? 'SHARK' : 'WHALE';
-        
-        obstaclesRef.current.push({ 
-          x: obsX, 
-          y: -100, 
-          width: OBSTACLE_WIDTH, 
-          height: OBSTACLE_HEIGHT,
-          type: type
-        });
-      }
-    }
-
-    // 5. Collision Detection
-    const playerX = getLaneCenter(currentLaneRef.current);
-    const playerRect = { x: playerX + 15, y: INTERNAL_HEIGHT - 130, w: BOAT_WIDTH - 30, h: BOAT_HEIGHT - 20 };
-    
-    for (let obs of obstaclesRef.current) {
-      const obsRect = { x: obs.x + 10, y: obs.y + 10, w: obs.width - 20, h: obs.height - 20 };
-
-      if (
-        playerRect.x < obsRect.x + obsRect.w &&
-        playerRect.x + playerRect.w > obsRect.x &&
-        playerRect.y < obsRect.y + obsRect.h &&
-        playerRect.y + playerRect.h > obsRect.y
-      ) {
-        setGameState('GAMEOVER');
-        cancelAnimationFrame(requestRef.current);
-        return; 
-      }
-    }
-
-    draw();
-    requestRef.current = requestAnimationFrame(updateGame);
-  };
-
-  // DRAW FUNCTION
-  const draw = () => {
-    const ctx = canvasRef.current.getContext('2d');
-    
-    // Clear (Black Background)
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(0, 0, INTERNAL_WIDTH, INTERNAL_HEIGHT);
-
-    // --- DRAW HORIZONTAL SEA WAVES (Blue - Right Eye) ---
-    ctx.strokeStyle = '#0000FF'; // Pure Blue
-    ctx.lineWidth = 2;
-    ctx.globalAlpha = 0.7; // Slightly transparent waves look nice
-
-    // Wave parameters
-    const waveHeight = 10; // Peak-to-trough height
-    const waveLength = 100; // Length of one wave cycle
-    const spacingY = 40;   // Vertical space between wave lines
-
-    // Calculate current horizontal shift based on animation loop
-    // We shift left to simulate moving right
-    const shiftX = -waveHorizontalOffsetRef.current;
-
-    ctx.beginPath();
-    // Loop from top to bottom of screen to draw multiple wave lines
-    // Start slightly off-screen (y = -spacingY) to ensure top is covered
-    for (let y = -spacingY; y < INTERNAL_HEIGHT + spacingY; y += spacingY) {
-        ctx.moveTo(shiftX - waveLength, y); // Move to start point off-screen left
-
-        // Draw repeating wave segments across the screen using Bezier curves
-        // We draw enough segments to cover the width plus the animation buffers
-        for (let x = shiftX - waveLength; x < INTERNAL_WIDTH + waveLength * 2; x += waveLength) {
-            ctx.bezierCurveTo(
-                x + waveLength / 4, y - waveHeight, // Control point 1 (Peak)
-                x + waveLength * 3 / 4, y + waveHeight, // Control point 2 (Trough)
-                x + waveLength, y // End point
-            );
-        }
-    }
-    ctx.stroke();
-    ctx.globalAlpha = 1.0; // Reset alpha for other elements
-
-    // --- DRAW BOAT (Red - Left Eye) ---
-    const pX = getLaneCenter(currentLaneRef.current);
-    const pY = INTERNAL_HEIGHT - 140;
-    
-    ctx.fillStyle = `rgba(255, 0, 0, ${redIntensity})`;
-    
-    // Hull
-    ctx.beginPath();
-    ctx.moveTo(pX, pY);
-    ctx.lineTo(pX + BOAT_WIDTH, pY);
-    ctx.lineTo(pX + BOAT_WIDTH - 10, pY + BOAT_HEIGHT);
-    ctx.lineTo(pX + 10, pY + BOAT_HEIGHT);
-    ctx.closePath();
-    ctx.fill();
-
-    // Mast
-    ctx.fillStyle = `rgba(150, 0, 0, ${redIntensity})`;
-    ctx.fillRect(pX + BOAT_WIDTH/2 - 3, pY - 30, 6, 30);
-    
-    // Sail
-    ctx.beginPath();
-    ctx.moveTo(pX + BOAT_WIDTH/2, pY - 30);
-    ctx.lineTo(pX + BOAT_WIDTH, pY);
-    ctx.lineTo(pX + BOAT_WIDTH/2, pY);
-    ctx.fill();
-
-    // --- DRAW OBSTACLES (Red - Left Eye) ---
-    obstaclesRef.current.forEach(obs => {
-      ctx.fillStyle = `rgba(255, 0, 0, ${redIntensity})`;
-      
-      if (obs.type === 'SHARK') {
-        // Shark Fin
-        ctx.beginPath();
-        ctx.moveTo(obs.x + 10, obs.y + obs.height);
-        ctx.lineTo(obs.x + obs.width/2, obs.y);
-        ctx.lineTo(obs.x + obs.width - 10, obs.y + obs.height);
-        ctx.fill();
-        // Water cut line
-        ctx.strokeStyle = `rgba(100, 0, 0, ${redIntensity})`;
-        ctx.lineWidth = 4;
-        ctx.beginPath();
-        ctx.moveTo(obs.x, obs.y + obs.height);
-        ctx.lineTo(obs.x + obs.width, obs.y + obs.height);
-        ctx.stroke();
-
-      } else {
-        // Whale
-        ctx.beginPath();
-        ctx.ellipse(obs.x + obs.width/2, obs.y + obs.height/2, obs.width/2, obs.height/3, 0, 0, 2 * Math.PI);
-        ctx.fill();
-        // Spout
-        ctx.fillStyle = `rgba(100, 0, 0, ${redIntensity})`;
-        ctx.beginPath();
-        ctx.arc(obs.x + obs.width/2, obs.y + 15, 4, 0, 2*Math.PI);
-        ctx.fill();
-      }
-    });
-  };
+  const rAf = useRef();
+  const lastT = useRef(0);
+  const scoreR = useRef(0);
+  const speedR = useRef(INIT_SPEED);
+  const obsR = useRef([]);
+  const waveX = useRef(0);
+  const laneCurR = useRef(1);
+  const canvasRef = useRef(null);
 
   const startGame = () => {
-    scoreRef.current = 0;
-    speedRef.current = INITIAL_SPEED;
-    obstaclesRef.current = [];
-    currentLaneRef.current = 1;
-    waveHorizontalOffsetRef.current = 0;
-    lastTimeRef.current = performance.now(); 
-    
+    scoreR.current = 0;
+    speedR.current = INIT_SPEED;
+    obsR.current = [];
+    laneCurR.current = 1;
+    waveX.current = 0;
+    lastT.current = performance.now();
+    startTimeRef.current = Date.now();
     setScore(0);
     setDisplaySpeed(1);
     setCurrentLane(1);
     setGameState('PLAYING');
-    
-    requestRef.current = requestAnimationFrame(updateGame);
+  };
+
+  const endGame = () => {
+    setGameState('GAMEOVER');
+    if (onGameEnd && startTimeRef.current) onGameEnd(scoreR.current, (Date.now() - startTimeRef.current) / 1000);
+  };
+
+  const draw = () => {
+    const ctx = canvasRef.current?.getContext('2d');
+    if (!ctx) return;
+    ctx.fillStyle = colors.background;
+    ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = colors.lock;
+    ctx.lineWidth = 2;
+    ctx.globalAlpha = 0.7;
+    const shiftX = -waveX.current;
+    const waveH = 10, waveL = 100, spaceY = 40;
+    ctx.beginPath();
+    for (let y = -spaceY; y < H + spaceY; y += spaceY) {
+      ctx.moveTo(shiftX - waveL, y);
+      for (let x = shiftX - waveL; x < W + waveL * 2; x += waveL) {
+        ctx.bezierCurveTo(x + waveL/4, y - waveH, x + waveL*3/4, y + waveH, x + waveL, y);
+      }
+    }
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    const pX = laneCenter(laneCurR.current), pY = H - 140;
+    ctx.fillStyle = colors.target;
+    ctx.beginPath();
+    ctx.moveTo(pX, pY);
+    ctx.lineTo(pX + BOAT_W, pY);
+    ctx.lineTo(pX + BOAT_W - 10, pY + BOAT_H);
+    ctx.lineTo(pX + 10, pY + BOAT_H);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillRect(pX + BOAT_W/2 - 3, pY - 30, 6, 30);
+    ctx.beginPath();
+    ctx.moveTo(pX + BOAT_W/2, pY - 30);
+    ctx.lineTo(pX + BOAT_W, pY);
+    ctx.lineTo(pX + BOAT_W/2, pY);
+    ctx.fill();
+    obsR.current.forEach((o) => {
+      ctx.fillStyle = colors.target;
+      ctx.beginPath();
+      ctx.moveTo(o.x + 10, o.y + OBS_H);
+      ctx.lineTo(o.x + OBS_W/2, o.y);
+      ctx.lineTo(o.x + OBS_W - 10, o.y + OBS_H);
+      ctx.fill();
+    });
+  };
+
+  const update = (time) => {
+    if (gameState !== 'PLAYING') return;
+    const dt = Math.min((time - lastT.current) / 1000, 0.1);
+    lastT.current = time;
+    waveX.current = (waveX.current + WAVE_X * dt) % 200;
+    obsR.current.forEach((o) => { o.y += speedR.current * dt; });
+    if (obsR.current[0]?.y > H) {
+      obsR.current.shift();
+      scoreR.current += 10;
+      setScore(scoreR.current);
+      if (scoreR.current % 100 === 0 && speedR.current < MAX_SPEED) {
+        speedR.current += INC;
+        setDisplaySpeed(Math.floor(speedR.current / 50));
+      }
+    }
+    const last = obsR.current[obsR.current.length - 1];
+    const gap = 280 + speedR.current * 0.25;
+    if (!last || last.y > gap) {
+      if (Math.random() < 0.05) {
+        const L = Math.floor(Math.random() * LANES);
+        obsR.current.push({ x: L * LANE_W + LANE_W/2 - OBS_W/2, y: -100, width: OBS_W, height: OBS_H });
+      }
+    }
+    const pX = laneCenter(laneCurR.current) + 15, pY = H - 130, pW = BOAT_W - 30, pH = BOAT_H - 20;
+    for (const o of obsR.current) {
+      const ox = o.x + 10, oy = o.y + 10, ow = OBS_W - 20, oh = OBS_H - 20;
+      if (pX < ox + ow && pX + pW > ox && pY < oy + oh && pY + pH > oy) {
+        setGameState('GAMEOVER');
+        if (onGameEnd && startTimeRef.current) onGameEnd(scoreR.current, (Date.now() - startTimeRef.current) / 1000);
+        cancelAnimationFrame(rAf.current);
+        return;
+      }
+    }
+    draw();
+    rAf.current = requestAnimationFrame(update);
   };
 
   useEffect(() => {
+    const h = (e) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        setGameState((p) => (p === 'PLAYING' ? 'PAUSED' : p === 'PAUSED' ? 'PLAYING' : p));
+        if (gameState === 'PAUSED') lastT.current = performance.now();
+        return;
+      }
+      if (gameState !== 'PLAYING') return;
+      if (e.key === 'ArrowLeft' && laneCurR.current > 0) { laneCurR.current--; setCurrentLane(laneCurR.current); }
+      else if (e.key === 'ArrowRight' && laneCurR.current < LANES - 1) { laneCurR.current++; setCurrentLane(laneCurR.current); }
+    };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [gameState]);
+
+  useEffect(() => {
     if (gameState === 'PLAYING') {
-      lastTimeRef.current = performance.now();
-      requestRef.current = requestAnimationFrame(updateGame);
-    } else {
-      draw(); 
-    }
-    return () => cancelAnimationFrame(requestRef.current);
-  }, [gameState, redIntensity, currentLane]);
+      lastT.current = performance.now();
+      rAf.current = requestAnimationFrame(update);
+    } else draw();
+    return () => cancelAnimationFrame(rAf.current);
+  }, [gameState, intensity, currentLane, colors]);
 
-  return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-neutral-900 font-sans text-white p-4">
-      
-      {!isFullScreen && (
-        <div className="flex items-center gap-3 mb-6">
-          <Ship className="text-red-600 w-8 h-8" />
-          <h1 className="text-3xl font-bold tracking-tighter">
-            <span className="text-red-600">RED</span> VOYAGE <span className="text-blue-600 text-sm opacity-50">(SEA MODE)</span>
-          </h1>
-        </div>
-      )}
-
-      <div className="flex gap-8 items-start justify-center w-full">
-        
-        {/* GAME CONTAINER */}
-        <div 
-          ref={containerRef}
-          className={`relative bg-neutral-950 flex items-center justify-center transition-all duration-300 ${
-            isFullScreen 
-              ? 'fixed inset-0 w-screen h-screen z-50' 
-              : 'border-4 border-gray-800 rounded-lg shadow-[0_0_50px_rgba(255,0,0,0.2)]'
-          }`}
-        >
-          <button 
-            onClick={toggleFullScreen}
-            className="absolute top-4 right-4 p-2 bg-gray-800/50 hover:bg-gray-700 rounded-full text-white z-50 transition hover:scale-110"
-            title="Toggle Fullscreen"
-          >
-            {isFullScreen ? <Minimize size={24} /> : <Maximize size={24} />}
-          </button>
-
-          <canvas
-            ref={canvasRef}
-            width={INTERNAL_WIDTH}
-            height={INTERNAL_HEIGHT}
-            className={`bg-black block shadow-2xl transition-all duration-300 ${
-              isFullScreen 
-                ? 'max-h-screen max-w-full aspect-[2/3]' 
-                : 'rounded' 
-            }`}
-          />
-
-          {/* OVERLAY */}
-          {gameState !== 'PLAYING' && (
-            <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-40 backdrop-blur-sm">
-              
-              {gameState === 'GAMEOVER' && (
-                <div className="text-center mb-6 animate-pulse">
-                  <AlertTriangle className="mx-auto text-red-500 w-16 h-16 mb-2" />
-                  <h2 className="text-4xl font-black text-white">CAPSIZED!</h2>
-                  <p className="text-xl text-red-400">Score: {score}</p>
-                </div>
-              )}
-
-              {gameState === 'PAUSED' && (
-                <div className="text-center mb-6">
-                  <Pause className="mx-auto text-blue-500 w-16 h-16 mb-2" />
-                  <h2 className="text-4xl font-black text-white">PAUSED</h2>
-                </div>
-              )}
-              
-              <button
-                onClick={() => gameState === 'PAUSED' ? setGameState('PLAYING') : startGame()}
-                className="flex items-center gap-2 px-8 py-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-full text-xl shadow-lg transition-transform hover:scale-105 active:scale-95"
-              >
-                <Play fill="currentColor" />
-                {gameState === 'START' ? 'SET SAIL' : (gameState === 'PAUSED' ? 'RESUME' : 'RETRY')}
-              </button>
-            </div>
-          )}
-
-          <div className="absolute top-4 left-4 text-white font-mono font-bold text-xl drop-shadow-md z-30 pointer-events-none">
-            SCORE: {score}
-          </div>
-        </div>
-
-        {/* CONTROLS SIDEBAR (Hidden in Fullscreen) */}
-        {!isFullScreen && (
-          <div className="w-64 bg-neutral-800 p-6 rounded-xl border border-neutral-700 h-[600px] flex flex-col">
-            <div className="flex items-center gap-2 mb-6 text-gray-400 uppercase text-xs font-bold tracking-widest">
-              <Settings size={14} />
-              Therapy Configuration
-            </div>
-
-            <div className="space-y-8 flex-1">
-              <div>
-                <label className="block text-sm font-medium text-red-400 mb-2">
-                  Left Eye Challenge
-                </label>
-                <input 
-                  type="range" 
-                  min="0.1" 
-                  max="1.0" 
-                  step="0.1"
-                  value={redIntensity}
-                  onChange={(e) => setRedIntensity(parseFloat(e.target.value))}
-                  className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-red-600"
-                />
-                <div className="flex justify-between text-xs text-gray-500 mt-2">
-                  <span>Dim</span>
-                  <span>Bright</span>
-                </div>
-              </div>
-
-              <div className="bg-black/30 p-4 rounded text-sm text-gray-400 space-y-2">
-                <p><strong>Blue Waves:</strong> Visible to Right Eye.</p>
-                <p><strong>Red Boat & Obstacles:</strong> Visible to Left Eye.</p>
-                <p className="text-yellow-500 text-xs mt-2">Knots: {displaySpeed}</p>
-              </div>
-            </div>
-            
-             <div className="text-center text-xs text-gray-500 mt-auto">
-               <MoveDown className="mx-auto mb-1 opacity-50" />
-               Arrow Keys to Steer
-             </div>
+  if (isFullScreen) {
+    return (
+      <div className="h-full w-full flex items-center justify-center relative">
+        <canvas ref={canvasRef} width={W} height={H} className="max-h-full max-w-full" style={{ objectFit: 'contain' }} />
+        <div className="absolute top-2 left-2 font-mono font-bold text-white drop-shadow-lg z-10">SCORE: {score}</div>
+        {gameState !== 'PLAYING' && (
+          <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-10">
+            {gameState === 'GAMEOVER' && (<div className="text-center mb-4"><AlertTriangle className="mx-auto w-12 h-12 mb-2" style={{ color: colors.target }} /><h2 className="text-2xl font-black">CAPSIZED</h2><p className="text-lg" style={{ color: colors.target }}>Score: {score}</p></div>)}
+            {gameState === 'PAUSED' && (<div className="text-center mb-4"><Pause className="mx-auto w-12 h-12 mb-2" style={{ color: colors.lock }} /><h2 className="text-2xl font-black">PAUSED</h2></div>)}
+            <button onClick={() => (gameState === 'PAUSED' ? setGameState('PLAYING') : startGame())} className="flex items-center gap-2 px-6 py-3 rounded-full font-bold" style={{ backgroundColor: colors.target, color: '#fff' }}><Play fill="currentColor" /> {gameState === 'START' ? 'Set Sail' : gameState === 'PAUSED' ? 'Resume' : 'Retry'}</button>
           </div>
         )}
       </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-center min-h-screen bg-slate-900 text-white p-4">
+      <div className="flex gap-3 mb-4">
+        <Ship className="w-8 h-8" style={{ color: colors.target }} />
+        <h1 className="text-2xl font-bold">Sea Explorer</h1>
+      </div>
+      <div className="flex gap-6 items-start max-w-4xl mx-auto w-full">
+        <div className="relative rounded-lg border-2 border-slate-700 overflow-hidden bg-slate-950 max-w-full">
+          <canvas ref={canvasRef} width={W} height={H} className="block max-w-full max-h-[70vh] object-contain" />
+          <div className="absolute top-3 left-3 font-mono font-bold">SCORE: {score}</div>
+          {gameState !== 'PLAYING' && (
+            <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center">
+              {gameState === 'GAMEOVER' && (
+                <div className="text-center mb-4">
+                  <AlertTriangle className="mx-auto w-12 h-12 mb-2" style={{ color: colors.target }} />
+                  <h2 className="text-2xl font-black">CAPSIZED</h2>
+                  <p className="text-lg" style={{ color: colors.target }}>Score: {score}</p>
+                </div>
+              )}
+              {gameState === 'PAUSED' && (
+                <div className="text-center mb-4">
+                  <Pause className="mx-auto w-12 h-12 mb-2" style={{ color: colors.lock }} />
+                  <h2 className="text-2xl font-black">PAUSED</h2>
+                </div>
+              )}
+              <button
+                onClick={() => (gameState === 'PAUSED' ? setGameState('PLAYING') : startGame())}
+                className="flex items-center gap-2 px-6 py-3 rounded-full font-bold"
+                style={{ backgroundColor: colors.target, color: '#fff' }}
+              >
+                <Play fill="currentColor" /> {gameState === 'START' ? 'Set Sail' : gameState === 'PAUSED' ? 'Resume' : 'Retry'}
+              </button>
+            </div>
+          )}
+        </div>
+        <div className="w-52 bg-slate-800 p-4 rounded-xl border border-slate-600 space-y-4">
+          <div className="flex items-center gap-2 text-slate-400 text-sm font-semibold"><Settings size={14} /> Config</div>
+          <div>
+            <label className="block text-sm text-slate-400 mb-1">Target intensity</label>
+            <input type="range" min="0.1" max="1" step="0.1" value={intensity} onChange={(e) => setIntensity(parseFloat(e.target.value))} className="w-full accent-indigo-500" />
+          </div>
+          <p className="text-slate-400 text-sm">Waves: lock. Boat & obstacles: target. SPACE: Pause. Arrows: steer.</p>
+        </div>
+      </div>
     </div>
   );
-};
-
-export default DichopticSea;
+}
