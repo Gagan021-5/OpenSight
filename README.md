@@ -1,4 +1,3 @@
-
 <div align="center">
   <img src="frontend/public/mylogo.jpeg" alt="OpenSight Logo" width="150">
 </div>
@@ -19,21 +18,32 @@
 
 ---
 
+## 🎥 Demo & Visuals
+
+### Video Walkthrough
+[![OpenSight Demo Video](https://img.shields.io/badge/Watch-Demo_Video-red?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/watch?v=DAcgy-Zxv48&feature=youtu.be)
+
+*Click the badge above to see OpenSight’s Dichoptic Engine and Dr. Sight Assistant in action.*
+
+### Interface Gallery
+| **Pediatric Pilot Mode (Kids)** | **Clinical Dashboard (Adults)** |
+|:---:|:---:|
+| ![Pediatric UI](https://i.postimg.cc/Bv2KV5ch/Screenshot-2026-01-25-155240.png) | ![Adult UI](https://i.postimg.cc/FFTJ8Hcn/Screenshot-2026-01-25-160026.png) |
+| *Gamified ranks and high-engagement mission interface.* | *Data-driven progress tracking and clinical charts.* |
+
+---
+
 ## The Problem We Solve
 
-Traditional vision therapy requires expensive clinical equipment and regular visits to specialists, creating barriers to consistent treatment for millions suffering from **Amblyopia**, **Strabismus**, and **Convergence Insufficiency**. 
+Traditional vision therapy requires expensive clinical equipment and regular visits to specialists, creating barriers for millions suffering from **Amblyopia**, **Strabismus**, and **Convergence Insufficiency**. 
 
 OpenSight bridges this gap by transforming standard screens and $2 Red/Blue glasses into a powerful therapeutic platform, making clinically-inspired exercises accessible from home.
 
 ---
 
-## Overview
-
-OpenSight delivers clinically inspired vision therapy through playful, adaptive games and an AI-guided analysis layer. The platform supports two UX modes (Kids and Adults), a configurable Dichoptic Engine, and an AI assistant called **Dr. Sight** for on-demand guidance and interpretation.
-
----
-
 ## How It Works: The Flow
+
+[Image of a flow chart showing user login, age group selection, game selection, dichoptic rendering, and score saving]
 
 ```mermaid
 graph TD
@@ -53,163 +63,87 @@ graph TD
     K --> L[AI Dr. Sight Analysis]
 ```
 
+
+OpenSight is a specialized vision therapy ecosystem designed to democratize eye care by transforming medical exercises into an engaging, high-performance arcade. We bridge the "Compliance Gap" in vision therapy—making treatment addictive through gamification rather than exhaustive through drills.
+
 ---
 
 ## Core Features
 
 ### 1. 🎯 The Dichoptic Engine
-> **Logic Core**: A custom React hook drives the entire visual system based on the user's medical profile, enabling precise color separation for therapeutic effect.
+**Logic Core**: A custom React hook (`useTherapyColors`) drives the entire visual system based on the user's medical profile, enabling precise color separation for therapeutic effect.
 
-- **Left Weak**: Target = 🔴 Red; Lock = 🔵 Blue  
-- **Right Weak**: Target = 🔵 Blue; Lock = 🔴 Red  
-- **Fusion**: Target = 🟣 Purple (requires both eyes to work together)
+* **Left Weak**: Target = 🔴 Red; Lock = 🔵 Blue
+* **Right Weak**: Target = 🔵 Blue; Lock = 🔴 Red
+* **Fusion**: Target = 🟣 Purple (requires both eyes to work together)
 
 ### 2. 👥 Dual UI System
-- **Kids Mode**: Bright colors, Captain ranks, badges, and Mission Control interface (Nunito font)  
-- **Adults Mode**: Clean Clinical Dashboard, progress charts, and data focus (Inter font)
-
-#### Neuroplasticity & UX
-The dual-mode design is medically significant for patient adherence. Children engage better with gamified elements and rewards, while adults respond to data-driven progress tracking and clinical terminology. This tailored approach maximizes neuroplasticity through consistent engagement.
+The platform supports two distinct UX modes tailored to patient adherence and neuroplasticity:
+* **Kids Mode**: Bright colors, "Captain" ranks, and a Mission Control interface.
+* **Adults Mode**: Clean Clinical Dashboard with progress charts and a professional data focus.
 
 ### 3. 🤖 AI Dr. Sight
-- Powered by Llama 3.1 via Groq with a **local fallback knowledge base**  
-- Provides detailed medical guidance and instant answers to therapy questions  
-- **Resilient Architecture**: Ensures basic guidance when the API is unavailable
+* Powered by **Llama 3.1** via Groq with a **local fallback knowledge base** to ensure reliability.
+* Provides detailed medical guidance and instant answers to therapy questions.
+* **Resilient Architecture**: Ensures basic guidance is available even if the remote API is offline.
 
 ### 4. 🎬 Cinema Mode
-- Games run in a dedicated immersive HUD  
-- Full-screen canvas with `object-fit: contain`  
-- Floating glassmorphism controls to maximize therapeutic field of view
+* Games run in a dedicated immersive HUD with full-screen canvas support.
+* Features floating glassmorphism controls to maximize the therapeutic field of view.
 
 ---
 
 ## Game Suite Gallery
 
 | 🎮 Game | 🎯 Condition Treated | ⚡ Mechanic |
-|---|---|---|
-| 🐍 Snake | Amblyopia | Eye Tracking & Smooth Pursuit |
-| 🏎️ Racing | Amblyopia | Reaction Time & Anti-Suppression |
-| 🧩 Tetris | Strabismus | Spatial Planning & Fusion |
-| 🌊 Sea Explorer | Contrast Sensitivity | Finding faint objects in deep blue |
-| 🎯 Zooming Target | Convergence | Crossing/Uncrossing eyes (Vergence) |
-| 🔨 Whack-a-Target | Tracking | Rapid Saccades (Reading skills) |
-| 💡 Lighthouse | Visual Neglect | Scanning into the blind side |
+| :--- | :--- | :--- |
+| 🐍 **Snake** | Amblyopia | Eye Tracking & Smooth Pursuit |
+| 🏎️ **Racing** | Amblyopia | Reaction Time & Anti-Suppression |
+| 🧩 **Tetris** | Strabismus | Spatial Planning & Fusion |
+| 🌊 **Sea Explorer** | Contrast Sensitivity | Finding faint objects in deep blue |
+| 🎯 **Zooming Target**| Convergence | Crossing/Uncrossing eyes (Vergence) |
+| 🔨 **Whack-a-Target** | Tracking | Rapid Saccades (Reading skills) |
+| 💡 **Lighthouse** | Visual Neglect | Scanning into the blind side |
+
+---
+
+## 🚀 Future Roadmap
+
+* **VR (WebXR) Support**: Implementing native image separation for VR headsets to eliminate the need for Red/Blue glasses.
+* **Clinical Trials**: Partnering with optometrists to validate game-based acuity improvements.
+* **Worth 4-Dot Diagnostic**: Integrating a digital version of the clinical suppression test.
+* **Mobile PWA**: Enabling offline therapy sessions and a dedicated mobile experience.
 
 ---
 
 ## Tech Stack
 
-- **Frontend**: React (Vite), Tailwind CSS, Framer Motion, HTML5 Canvas  
-- **Backend**: Node.js, Express.js  
-- **Database**: MongoDB (Mongoose), GridFS  
-- **Auth**: Custom JWT Implementation (secure & lightweight)  
-- **AI**: Groq SDK (Llama 3.1 8b)
+* **Frontend**: React (Vite), Tailwind CSS, Framer Motion, HTML5 Canvas.
+* **Backend**: Node.js, Express.js.
+* **Database**: MongoDB (Mongoose).
+* **AI**: Groq SDK (Llama 3.1 8b).
 
 ---
 
 ## Quick Start
 
 ### Backend Setup
-
 ```bash
 cd backend
 npm install
-
-# Create a .env file with:
-# MONGO_URI=your_mongodb_url
-# JWT_SECRET=your_secret
-# GROQ_API_KEY=your_key
-
+# Configure .env with MONGO_URI, JWT_SECRET, and GROQ_API_KEY
 npm run dev
-# Backend runs on http://localhost:50002
 ```
 
 ### Frontend Setup
-
 ```bash
 cd frontend
 npm install
-
-# Create a .env file with:
-# VITE_API_URL=http://localhost:5000/api
-
+# Configure .env with VITE_API_URL
 npm run dev
-# Frontend runs on http://localhost:5173
 ```
+### Deployment
+<div align="center"> <a href="https://visionfront.onrender.com"> <img src="https://img.shields.io/badge/Deployed-Render-10B981?style=for-the-badge&logo=render&logoColor=white" alt="Deployed to Render"> </a> </div>
 
----
-
-## API Reference
-
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | /api/auth/register | Register new patient |
-| POST | /api/chat | Talk to AI Dr. Sight |
-| PATCH | /api/user/config | Update weak eye / difficulty |
-| POST | /api/game/score | Save game performance |
-
----
-
-## Project Structure
-
-```bash
-backend/
- ├── controllers/    # Game logic & AI handlers
- ├── models/         # User & Score Schemas
- ├── routes/         # API Endpoints
- └── server.js       # Entry point
-
-frontend/src/
- ├── components/     # Games (Snake, Racing, etc.)
- ├── hooks/          # useTherapyColors (The Logic Core)
- ├── layouts/        # DashboardLayout (Kids vs Adult logic)
- └── pages/          # Dashboard, Settings, GamePage
-```
-
----
-
-## Development Notes
-
-- **Dichoptic Hook**: Keep the hook pure and driven by a single `userProfile` object. Expose color tokens and contrast parameters.  
-- **Cinema Mode Canvas**: Use a responsive canvas wrapper and scale game objects relative to the canvas logical size to preserve therapeutic geometry across devices.  
-- **AI Integration**: Wrap Groq calls with a resilient service that falls back to a local knowledge base when the remote API fails. Log queries for later review and anonymized model improvement.  
-- **Security**: Use HTTPS in production, rotate `JWT_SECRET`, and validate tokens on every protected route. Sanitize and validate all user inputs server-side.
-
----
-
-## Deployment
-
-<div align="center">
-  <a href="https://visionfront.onrender.com">
-    <img src="https://img.shields.io/badge/Deployed-Render-10B981?style=for-the-badge&logo=render&logoColor=white" alt="Deployed to Render">
-  </a>
-</div>
-
----
-
-## Join the Vision
-
-We're looking for passionate contributors to help democratize vision therapy:
-
-- **👨‍💻 Developers**: Help us expand the game suite and improve the Dichoptic Engine
-- **👩‍⚕️ Clinicians**: Provide medical insights and validate therapeutic effectiveness  
-- **🎨 UX Designers**: Enhance patient engagement and adherence through better design
-- **📊 Data Scientists**: Analyze therapy outcomes and improve AI recommendations
-
----
-
-## Contributing
-
-- **Issue First**: Open an issue describing the feature or bug. Include reproduction steps for bugs.  
-- **Branching**: Use `feature/` or `fix/` prefixes. Keep PRs focused and small.  
-- **Testing**: Add unit tests for game logic and integration tests for API endpoints.  
-- **Code Style**: Follow the existing ESLint and Prettier configuration. Run `npm run lint` and `npm run test` before submitting a PR.
-
----
-
-## License
-
-**OpenSight** is released under the **MIT License**. See the LICENSE file for full terms.
-
----
-
+### License
+OpenSight is released under the MIT License. See the LICENSE file for full terms.
