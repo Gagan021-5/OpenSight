@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Ship, AlertTriangle, Settings, Play, Pause, MoveDown, Maximize, Minimize, RotateCcw } from 'lucide-react';
 import useTherapyColors from '../hooks/useTherapyColors.js';
 import { useGlobal } from '../context/GlobalContext.jsx';
+import GameSummary from './GameSummary.jsx';
+import { saveGameSession } from '../utils/scoreTracker.js';
 
 const INTERNAL_WIDTH = 400;
 const INTERNAL_HEIGHT = 600;
@@ -26,6 +28,7 @@ export default function DichopticSea({ onGameEnd }) {
   const [score, setScore] = useState(0);
   const [displaySpeed, setDisplaySpeed] = useState(1);
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
   
   const rAf = useRef();
   const lastT = useRef(0);
@@ -64,6 +67,7 @@ export default function DichopticSea({ onGameEnd }) {
     startTimeRef.current = Date.now();
     setScore(0);
     setDisplaySpeed(1);
+    setShowSummary(false);
     setGameState('PLAYING');
     rAf.current = requestAnimationFrame(update);
   };
@@ -103,7 +107,14 @@ export default function DichopticSea({ onGameEnd }) {
     for (const o of obsR.current) {
       if (pX < o.x + 10 + (OBS_W - 20) && pX + pW > o.x + 10 && 
           pY < o.y + 10 + (OBS_H - 20) && pY + pH > o.y + 10) {
+        // Calculate session duration
+        const duration = startTimeRef.current ? Math.floor((Date.now() - startTimeRef.current) / 1000) : 0;
+        
+        // Save game session
+        saveGameSession('dichoptic-sea', scoreR.current, duration);
+        
         setGameState('GAMEOVER');
+        setShowSummary(true);
         if (onGameEnd && startTimeRef.current) 
           onGameEnd(scoreR.current, (Date.now() - startTimeRef.current) / 1000);
         cancelAnimationFrame(rAf.current);
@@ -202,12 +213,13 @@ export default function DichopticSea({ onGameEnd }) {
             style={{ backgroundColor: '#000' }} 
           />
           
-          {gameState !== 'PLAYING' && (
+          {gameState === 'PAUSED' && (
             <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-40 backdrop-blur-sm">
-              {gameState === 'GAMEOVER' && <div className="text-center mb-6"><AlertTriangle className="mx-auto w-16 h-16 mb-2" style={{ color: getSolidColor() }} /><h2 className="text-4xl font-black">CAPSIZED!</h2><p className="text-xl">Score: {score}</p></div>}
-              {gameState === 'PAUSED' && <div className="text-center mb-6"><Pause className="mx-auto w-16 h-16 mb-2 text-blue-500" /><h2 className="text-4xl font-black">PAUSED</h2></div>}
-              <button onClick={() => (gameState === 'GAMEOVER' || gameState === 'PAUSED') ? (gameState === 'PAUSED' ? setGameState('PLAYING') : startGame()) : startGame()} className="flex items-center gap-2 px-8 py-4 text-white font-bold rounded-full text-xl shadow-lg transition hover:scale-105" style={{ backgroundColor: getSolidColor() }}><Play fill="currentColor" /> {gameState === 'START' ? 'SET SAIL' : 'CONTINUE'}</button>
-              {(gameState === 'GAMEOVER' || gameState === 'PAUSED') && <button onClick={startGame} className="mt-4 flex items-center gap-2 px-6 py-2 bg-neutral-700 hover:bg-neutral-600 text-gray-300 font-bold rounded-full text-sm"><RotateCcw size={16} /> Restart</button>}
+              <div className="text-center mb-6">
+                <Pause className="mx-auto w-16 h-16 mb-2 text-blue-500" />
+                <h2 className="text-4xl font-black text-white">PAUSED</h2>
+              </div>
+              <button onClick={() => setGameState('PLAYING')} className="flex items-center gap-2 px-8 py-4 text-white font-bold rounded-full text-xl shadow-lg transition hover:scale-105" style={{ backgroundColor: getSolidColor() }}><Play fill="currentColor" /> RESUME</button>
             </div>
           )}
           <div className="absolute top-4 left-4 text-white font-mono font-bold text-xl drop-shadow-md z-30">SCORE: {score}</div>
@@ -241,6 +253,18 @@ export default function DichopticSea({ onGameEnd }) {
           </div>
         )}
       </div>
+
+      {/* Game Summary Overlay */}
+      <GameSummary
+        isOpen={showSummary}
+        onClose={() => setShowSummary(false)}
+        gameId="dichoptic-sea"
+        gameTitle="RED SEA"
+        score={score}
+        duration={startTimeRef.current ? Math.floor((Date.now() - startTimeRef.current) / 1000) : 0}
+        onRestart={startGame}
+        onBackToDashboard={() => window.location.href = '/dashboard'}
+      />
     </div>
   );
 }

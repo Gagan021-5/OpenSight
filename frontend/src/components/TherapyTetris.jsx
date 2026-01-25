@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { LayoutGrid, Play, Pause, AlertCircle, Settings, MoveDown, Maximize, Minimize, RotateCcw } from 'lucide-react';
 import useTherapyColors from '../hooks/useTherapyColors.js';
 import { useGlobal } from '../context/GlobalContext.jsx';
+import GameSummary from './GameSummary.jsx';
+import { saveGameSession } from '../utils/scoreTracker.js';
 
 const INTERNAL_WIDTH = 220;
 const INTERNAL_HEIGHT = 396;

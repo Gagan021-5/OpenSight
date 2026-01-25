@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Car, AlertTriangle, Settings, Play, MoveDown, Maximize, Minimize, Pause, RotateCcw } from 'lucide-react';
 import useTherapyColors from '../hooks/useTherapyColors.js';
 import { useGlobal } from '../context/GlobalContext.jsx';
+import GameSummary from './GameSummary.jsx';
+import { saveGameSession } from '../utils/scoreTracker.js';
 
 // INTERNAL RESOLUTION (Fixed for Physics)
 const INTERNAL_WIDTH = 400;
@@ -34,6 +36,7 @@ const DichopticRacing = () => {
   const [displaySpeed, setDisplaySpeed] = useState(1); 
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [currentLane, setCurrentLane] = useState(1);
+  const [showSummary, setShowSummary] = useState(false);
 
   // Refs
   const requestRef = useRef();
@@ -43,6 +46,7 @@ const DichopticRacing = () => {
   const obstaclesRef = useRef([]);
   const laneOffsetRef = useRef(0); 
   const currentLaneRef = useRef(1);
+  const startTimeRef = useRef(null);
 
   const getLaneCenter = (laneIndex) => (laneIndex * LANE_WIDTH) + (LANE_WIDTH / 2) - (CAR_WIDTH / 2);
   const getObstacleX = (laneIndex) => (laneIndex * LANE_WIDTH) + (LANE_WIDTH / 2) - (OBSTACLE_WIDTH / 2);
@@ -163,7 +167,14 @@ const DichopticRacing = () => {
       const obs = obstaclesRef.current[i];
       const oRect = { x: obs.x + 5, y: obs.y + 5, w: obs.width - 10, h: obs.height - 10 };
       if (pRect.x < oRect.x + oRect.w && pRect.x + pRect.w > oRect.x && pRect.y < oRect.y + oRect.h && pRect.y + pRect.h > oRect.y) {
+        // Calculate session duration
+        const duration = startTimeRef.current ? Math.floor((Date.now() - startTimeRef.current) / 1000) : 0;
+        
+        // Save game session
+        saveGameSession('dichoptic-racing', scoreRef.current, duration);
+        
         setGameState('GAMEOVER');
+        setShowSummary(true);
         obstaclesRef.current.splice(i, 1);
         cancelAnimationFrame(requestRef.current);
         return; 
@@ -223,9 +234,11 @@ const DichopticRacing = () => {
     currentLaneRef.current = 1;
     laneOffsetRef.current = 0;
     lastTimeRef.current = performance.now(); 
+    startTimeRef.current = Date.now();
     setScore(0);
     setDisplaySpeed(1);
     setCurrentLane(1);
+    setShowSummary(false);
     setGameState('PLAYING');
     requestRef.current = requestAnimationFrame(updateGame);
   };
@@ -290,43 +303,23 @@ const DichopticRacing = () => {
           />
 
           {/* OVERLAY */}
-          {gameState !== 'PLAYING' && (
+          {gameState === 'PAUSED' && (
             <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-40 backdrop-blur-sm">
-              {gameState === 'GAMEOVER' && (
-                <div className="text-center mb-6 animate-pulse">
-                  <AlertTriangle className="mx-auto w-16 h-16 mb-2" style={{ color: getSolidColor() }} />
-                  <h2 className="text-4xl font-black text-white">CRASHED!</h2>
-                  <p className="text-xl" style={{ color: getSolidColor() }}>Score: {score}</p>
-                </div>
-              )}
-              {gameState === 'PAUSED' && (
-                <div className="text-center mb-6">
-                  <Pause className="mx-auto w-16 h-16 mb-2 text-blue-500" />
-                  <h2 className="text-4xl font-black text-white">PAUSED</h2>
-                </div>
-              )}
-              <div className="flex flex-col gap-3">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation(); 
-                    (gameState === 'GAMEOVER' || gameState === 'PAUSED') ? resumeGame() : resetGame()
-                  }}
-                  className="flex items-center justify-center gap-2 px-8 py-4 text-white font-bold rounded-full text-xl shadow-lg transition hover:scale-105"
-                  style={{ backgroundColor: getSolidColor() }}
-                >
-                  <Play fill="currentColor" />
-                  {gameState === 'START' ? 'START ENGINE' : 'CONTINUE'}
-                </button>
-
-                {(gameState === 'GAMEOVER' || gameState === 'PAUSED') && (
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); resetGame(); }}
-                      className="flex items-center justify-center gap-2 px-6 py-2 bg-neutral-700 hover:bg-neutral-600 text-gray-300 font-bold rounded-full text-sm"
-                    >
-                        <RotateCcw size={16} /> Restart
-                    </button>
-                )}
+              <div className="text-center mb-6">
+                <Pause className="mx-auto w-16 h-16 mb-2 text-blue-500" />
+                <h2 className="text-4xl font-black text-white">PAUSED</h2>
               </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation(); 
+                  resumeGame();
+                }}
+                className="flex items-center justify-center gap-2 px-8 py-4 text-white font-bold rounded-full text-xl shadow-lg transition hover:scale-105"
+                style={{ backgroundColor: getSolidColor() }}
+              >
+                <Play fill="currentColor" />
+                RESUME
+              </button>
             </div>
           )}
 
@@ -387,6 +380,18 @@ const DichopticRacing = () => {
           </div>
         )}
       </div>
+
+      {/* Game Summary Overlay */}
+      <GameSummary
+        isOpen={showSummary}
+        onClose={() => setShowSummary(false)}
+        gameId="dichoptic-racing"
+        gameTitle="RED RACER"
+        score={score}
+        duration={startTimeRef.current ? Math.floor((Date.now() - startTimeRef.current) / 1000) : 0}
+        onRestart={resetGame}
+        onBackToDashboard={() => window.location.href = '/dashboard'}
+      />
     </div>
   );
 };

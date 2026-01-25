@@ -36,13 +36,16 @@ const InfoCard = ({ icon: Icon, label, value, colorClass }) => (
     <div className={`absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity ${colorClass}`}>
       <Icon size={48} />
     </div>
-    <div className="flex items-center gap-4 relative z-10">
+    <div className="flex items-center gap-4 relative z-10 w-full">
       <div className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center ${colorClass.replace('text-', 'bg-').replace('500', '100')} ${colorClass}`}>
         <Icon size={24} />
       </div>
-      <div>
+      {/* Changed: Removed truncate and min-width constraints to allow natural wrapping */}
+      <div className="flex-1 min-w-0 overflow-hidden">
         <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider">{label}</p>
-        <p className="text-lg font-bold text-slate-900 truncate">{value}</p>
+        <p className="text-lg font-bold text-slate-900 break-words leading-tight">
+          {value}
+        </p>
       </div>
     </div>
   </motion.div>
@@ -58,12 +61,12 @@ export default function ProfilePage() {
   const isKids = ageGroup === 'kid';
 
   return (
-    <div className={`min-h-screen w-full relative overflow-hidden flex items-center justify-center p-4 sm:p-8 ${isKids ? 'bg-amber-50' : 'bg-slate-50'}`}>
+    <div className={`min-h-screen w-full relative overflow-x-hidden flex items-center justify-center p-4 sm:p-8 ${isKids ? 'bg-amber-50' : 'bg-slate-50'}`}>
       
       {/* Ambient Background */}
-      <div className="absolute inset-0 z-0 pointer-events-none">
-        <div className={`absolute top-[-10%] left-[-5%] w-[500px] h-[500px] rounded-full blur-[100px] opacity-30 mix-blend-multiply animate-blob ${isKids ? 'bg-yellow-300' : 'bg-blue-200'}`} />
-        <div className={`absolute bottom-[-10%] right-[-5%] w-[500px] h-[500px] rounded-full blur-[100px] opacity-30 mix-blend-multiply animate-blob animation-delay-2000 ${isKids ? 'bg-orange-300' : 'bg-purple-200'}`} />
+      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+        <div className={`absolute top-[-10%] left-[-5%] w-[500px] h-[500px] rounded-full blur-[100px] opacity-30 mix-blend-multiply animate-blob ${isKids ? "bg-yellow-300" : "bg-blue-200"}`} />
+        <div className={`absolute bottom-[-10%] right-[-5%] w-[500px] h-[500px] rounded-full blur-[100px] opacity-30 mix-blend-multiply animate-blob animation-delay-2000 ${isKids ? "bg-orange-300" : "bg-purple-200"}`} />
       </div>
 
       <motion.div 
@@ -84,10 +87,10 @@ export default function ProfilePage() {
           >
             <User size={40} />
           </motion.div>
-          <motion.h1 variants={ITEM_VARIANTS} className={`text-4xl font-black mb-2 ${isKids ? 'text-slate-900 font-nunito' : 'text-slate-900 tracking-tight'}`}>
+          <motion.h1 variants={ITEM_VARIANTS} className={`text-3xl sm:text-4xl font-black mb-2 ${isKids ? 'text-slate-900 font-nunito' : 'text-slate-900 tracking-tight'}`}>
             {isKids ? 'Your Pilot Profile' : 'Patient Profile'}
           </motion.h1>
-          <motion.p variants={ITEM_VARIANTS} className={`text-lg ${isKids ? 'text-slate-600 font-nunito' : 'text-slate-500'}`}>
+          <motion.p variants={ITEM_VARIANTS} className={`text-base sm:text-lg ${isKids ? 'text-slate-600 font-nunito' : 'text-slate-500'}`}>
             Manage your account details and therapy configuration.
           </motion.p>
         </div>
