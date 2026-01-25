@@ -1,14 +1,17 @@
-### OpenSight README
-
-`https://img.shields.io/badge/license-MIT-green`  
-`https://img.shields.io/badge/MERN-Full%20Stack-blue`  
-`https://img.shields.io/badge/Status-Hackathon%20Ready-orange`  
-`https://img.shields.io/badge/AI-Llama%203.1-purple`
 
 **OpenSight** is a free, open-source, browser-based platform that gamifies clinically inspired exercises for **Amblyopia**, **Strabismus**, and **Convergence Insufficiency**.  
 We replace expensive medical equipment with **standard screens and $2 Red/Blue glasses**, powered by an intelligent Dichoptic Engine.
 
 ---
+
+![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)
+![Stack](https://img.shields.io/badge/MERN-Full%20Stack-blue?style=for-the-badge)
+![Status](https://img.shields.io/badge/Status-Hackathon%20Ready-orange?style=for-the-badge)
+![AI](https://img.shields.io/badge/AI-Llama%203.1-purple?style=for-the-badge)
+
+
+
+
 
 #### Overview
 
