@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useGlobal } from './context/GlobalContext';
 import AppRoutes from './routes';
 import { Eye, Loader2 } from 'lucide-react';
-import api from './utils/api'; 
+// We remove 'api' import here because we will use standard fetch for the health check
+// to avoid any Axios configuration issues or stale base URLs.
 
 function App() {
   const { loading: authLoading } = useGlobal();
@@ -13,20 +14,21 @@ function App() {
   useEffect(() => {
     const wakeUpBackend = async () => {
       try {
-        // FIX: The backend defines /ping at the root, but our API instance points to /api
-        // We override the baseURL for just this request to hit the root https://...onrender.com/ping
-        const rootUrl = api.defaults.baseURL?.replace('/api', '') || '';
-        
-        // Use standard fetch to avoid axios baseURL issues for this specific root check
-        // or axios with custom config. Let's use the axios instance but override baseURL.
-        await api.get('/ping', { 
-           baseURL: rootUrl 
-        });
+        console.log(`[Health Check] Attempt ${retryCount + 1}...`);
 
-        setIsBackendReady(true);
+        // FIX: Hardcode the production URL here. 
+        // This guarantees we hit the live server and ignores any "localhost" ghosts in your build.
+        const res = await fetch('https://visionback.onrender.com/ping');
+
+        if (res.ok) {
+           console.log("[Health Check] Success! Backend is awake.");
+           setIsBackendReady(true);
+        } else {
+           throw new Error("Backend not ready");
+        }
       } catch (error) {
-        console.log(`Backend sleeping or path wrong... attempt ${retryCount + 1}`);
-        // Retry every 5 seconds
+        console.log("[Health Check] Failed. Retrying in 5s...", error);
+        // Retry every 5 seconds until success
         setTimeout(() => setRetryCount(prev => prev + 1), 5000);
       }
     };
