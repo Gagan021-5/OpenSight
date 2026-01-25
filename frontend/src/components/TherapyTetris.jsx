@@ -1,37 +1,37 @@
-import { useState, useEffect, useRef } from 'react';
-import { LayoutGrid, Play, Pause, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { LayoutGrid, Play, Pause, AlertCircle, Settings, MoveDown, Maximize, Minimize, RotateCcw } from 'lucide-react';
 import useTherapyColors from '../hooks/useTherapyColors.js';
 import { useGlobal } from '../context/GlobalContext.jsx';
 
-/**
- * Strabismus – "Therapy Tetris"
- * Falling blocks = target (weak eye). Static/stacked blocks = lock (strong eye).
- */
-const COLS = 10, ROWS = 18, CELL = 22;
-const W = COLS * CELL, H = ROWS * CELL;
+const INTERNAL_WIDTH = 220;
+const INTERNAL_HEIGHT = 396;
+const COLS = 10;
+const ROWS = 18;
+const CELL = 22;
+const W = COLS * CELL;
+const H = ROWS * CELL;
+
 const SHAPES = [
-  [[1,1,1,1]],
-  [[1,1],[1,1]],
-  [[1,1,1],[0,1,0]],
-  [[1,1,1],[1,0,0]],
-  [[1,1,1],[0,0,1]],
-  [[1,1,0],[0,1,1]],
-  [[0,1,1],[1,1,0]],
+  [[1,1,1,1]],[[1,1],[1,1]],[[1,1,1],[0,1,0]],[[1,1,1],[1,0,0]],[[1,1,1],[0,0,1]],[[1,1,0],[0,1,1]],[[0,1,1],[1,1,0]]
 ];
 
-export default function TherapyTetris({ onGameEnd, isFullScreen }) {
+export default function TherapyTetris() {
   const { weakEye } = useGlobal();
-  const colors = useTherapyColors(weakEye, 1);
+  const [intensity, setIntensity] = useState(1.0);
+  const colors = useTherapyColors(weakEye, intensity);
+  const getSolidColor = () => weakEye === 'left' ? '#FF0000' : '#0000FF';
 
+  const canvasRef = useRef(null);
+  const containerRef = useRef(null);
   const [gameState, setGameState] = useState('START');
   const [score, setScore] = useState(0);
+  const [lines, setLines] = useState(0);
+  const [isFullScreen, setIsFullScreen] = useState(false);
   const [frame, setFrame] = useState(0);
-  const startTimeRef = useRef(null);
   const gridRef = useRef(Array(ROWS).fill(null).map(() => Array(COLS).fill(0)));
   const pieceRef = useRef(null);
   const piecePosRef = useRef({ x: 0, y: 0 });
   const lastDropRef = useRef(0);
-  const canvasRef = useRef(null);
   const inc = () => setFrame((f) => f + 1);
 
   const spawn = () => {
@@ -45,15 +45,26 @@ export default function TherapyTetris({ onGameEnd, isFullScreen }) {
     pieceRef.current = spawn();
     piecePosRef.current = { x: pieceRef.current.x, y: pieceRef.current.y };
     lastDropRef.current = Date.now();
-    startTimeRef.current = Date.now();
     setScore(0);
+    setLines(0);
     setGameState('PLAYING');
   };
 
-  const endGame = () => {
-    setGameState('GAMEOVER');
-    if (onGameEnd && startTimeRef.current) onGameEnd(score, (Date.now() - startTimeRef.current) / 1000);
+  const toggleFullScreen = async () => {
+    if (!document.fullscreenElement) {
+      await containerRef.current?.requestFullscreen();
+      setIsFullScreen(true);
+    } else {
+      await document.exitFullscreen();
+      setIsFullScreen(false);
+    }
   };
+
+  useEffect(() => {
+    const h = () => setIsFullScreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', h);
+    return () => document.removeEventListener('fullscreenchange', h);
+  }, []);
 
   const overlap = (mat, px, py) => {
     for (let r = 0; r < mat.length; r++)
@@ -73,16 +84,19 @@ export default function TherapyTetris({ onGameEnd, isFullScreen }) {
   };
 
   const clearLines = () => {
-    let lines = 0;
+    let linesCleared = 0;
     for (let r = ROWS - 1; r >= 0; r--) {
       if (gridRef.current[r].every((c) => c)) {
         gridRef.current.splice(r, 1);
         gridRef.current.unshift(Array(COLS).fill(0));
-        lines++;
+        linesCleared++;
         r++;
       }
     }
-    if (lines) setScore((s) => s + lines * 100);
+    if (linesCleared) {
+      setScore((s) => s + linesCleared * 100);
+      setLines((l) => l + linesCleared);
+    }
   };
 
   const rotate = (m) => m[0].map((_, i) => m.map((r) => r[i]).reverse());
@@ -91,7 +105,7 @@ export default function TherapyTetris({ onGameEnd, isFullScreen }) {
     const h = (e) => {
       if (e.code === 'Space') {
         e.preventDefault();
-        setGameState((p) => (p === 'PLAYING' ? 'PAUSED' : p === 'PAUSED' ? 'PLAYING' : p));
+        setGameState(p => p === 'PLAYING' ? 'PAUSED' : p === 'PAUSED' ? 'PLAYING' : p);
         return;
       }
       if (gameState !== 'PLAYING' || !pieceRef.current) return;
@@ -106,7 +120,7 @@ export default function TherapyTetris({ onGameEnd, isFullScreen }) {
           clearLines();
           pieceRef.current = spawn();
           piecePosRef.current = { x: pieceRef.current.x, y: pieceRef.current.y };
-          if (overlap(pieceRef.current.mat, piecePosRef.current.x, piecePosRef.current.y)) endGame();
+          if (overlap(pieceRef.current.mat, piecePosRef.current.x, piecePosRef.current.y)) setGameState('GAMEOVER');
           inc();
         }
       }
@@ -133,7 +147,7 @@ export default function TherapyTetris({ onGameEnd, isFullScreen }) {
         clearLines();
         pieceRef.current = spawn();
         piecePosRef.current = { x: pieceRef.current.x, y: pieceRef.current.y };
-        if (overlap(pieceRef.current.mat, piecePosRef.current.x, piecePosRef.current.y)) endGame();
+        if (overlap(pieceRef.current.mat, piecePosRef.current.x, piecePosRef.current.y)) setGameState('GAMEOVER');
         inc();
       }
     };
@@ -144,8 +158,9 @@ export default function TherapyTetris({ onGameEnd, isFullScreen }) {
   useEffect(() => {
     const ctx = canvasRef.current?.getContext('2d');
     if (!ctx) return;
-    ctx.fillStyle = colors.background;
+    ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, W, H);
+    
     for (let r = 0; r < ROWS; r++)
       for (let c = 0; c < COLS; c++) {
         if (gridRef.current[r][c]) {
@@ -153,9 +168,10 @@ export default function TherapyTetris({ onGameEnd, isFullScreen }) {
           ctx.fillRect(c * CELL, r * CELL, CELL - 1, CELL - 1);
         }
       }
+    
     const p = pieceRef.current;
     if (p && gameState === 'PLAYING') {
-      ctx.fillStyle = colors.target;
+      ctx.fillStyle = getSolidColor();
       const { mat } = p;
       const { x, y } = piecePosRef.current;
       for (let r = 0; r < mat.length; r++)
@@ -164,76 +180,45 @@ export default function TherapyTetris({ onGameEnd, isFullScreen }) {
     }
   }, [gameState, frame, score, colors]);
 
-  if (isFullScreen) {
-    return (
-      <div className="h-full w-full flex items-center justify-center relative">
-        <canvas ref={canvasRef} width={W} height={H} className="max-h-full max-w-full" style={{ objectFit: 'contain', backgroundColor: '#121212' }} />
-        <div className="absolute top-4 left-4 font-mono text-white drop-shadow-lg z-20 bg-slate-900/60 backdrop-blur-md border border-white/10 px-3 py-2 rounded-xl">Score: {score}</div>
-        {gameState !== 'PLAYING' && (
-          <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-20">
-            {(gameState === 'GAMEOVER' || gameState === 'START') && (<div className="text-center mb-4">{gameState === 'GAMEOVER' && <AlertCircle className="mx-auto w-12 h-12 mb-2" style={{ color: colors.target }} />}<h2 className="text-2xl font-black">{gameState === 'START' ? 'Ready' : 'Game Over'}</h2><p className="text-slate-300">Score: {score}</p></div>)}
-            {gameState === 'PAUSED' && (<div className="text-center mb-4"><Pause className="mx-auto w-12 h-12 mb-2" style={{ color: colors.lock }} /><h2 className="text-2xl font-black">PAUSED</h2></div>)}
-            <button onClick={() => (gameState === 'PAUSED' ? setGameState('PLAYING') : startGame())} className="flex items-center gap-2 px-6 py-3 rounded-full font-bold" style={{ backgroundColor: colors.target, color: '#fff' }}><Play fill="currentColor" /> {gameState === 'START' ? 'Start' : gameState === 'PAUSED' ? 'Resume' : 'Restart'}</button>
-          </div>
-        )}
-      </div>
-    );
-  }
-
   return (
-    <div className="relative w-full h-full bg-gray-900 overflow-hidden">
-      {/* Layer 1: Game Canvas - Full Screen Background */}
-      <div className="absolute inset-0 flex items-center justify-center p-4">
-        <div className="relative rounded-xl border border-white/10 overflow-hidden bg-slate-950 w-full h-full max-w-5xl max-h-[85vh]">
-          <canvas ref={canvasRef} width={W} height={H} className="block w-full h-full object-contain" style={{ aspectRatio: '1/1', backgroundColor: '#121212' }} />
-          <div className="absolute top-3 left-3 font-mono font-bold text-lg text-white bg-slate-900/60 backdrop-blur-md border border-white/10 px-3 py-2 rounded-xl">Score: {score}</div>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-neutral-900 font-sans text-white p-4">
+      {!isFullScreen && (
+        <div className="flex items-center gap-3 mb-6">
+          <LayoutGrid className="w-8 h-8" style={{ color: getSolidColor() }} />
+          <h1 className="text-3xl font-bold tracking-tighter">
+            <span style={{ color: getSolidColor() }}>RED</span> TETRIS
+          </h1>
+        </div>
+      )}
+
+      {/* RESPONSIVE LAYOUT */}
+      <div className="flex flex-col lg:flex-row gap-8 items-start justify-center w-full max-w-5xl">
+        <div ref={containerRef} className={`relative w-full lg:flex-1 bg-neutral-950 flex items-center justify-center transition-all duration-300 ${isFullScreen ? 'fixed inset-0 z-50' : 'border-4 border-neutral-800 rounded-lg shadow-2xl aspect-[10/18] lg:h-[600px] lg:w-auto'}`}>
+          <button onClick={toggleFullScreen} className="absolute top-4 right-4 p-2 bg-gray-800/50 hover:bg-gray-700 rounded-full text-white z-50 transition">
+            {isFullScreen ? <Minimize size={24} /> : <Maximize size={24} />}
+          </button>
+          <canvas ref={canvasRef} width={W} height={H} className={`block shadow-2xl ${isFullScreen ? 'max-h-screen max-w-full object-contain' : 'w-full h-full object-contain'}`} style={{ backgroundColor: '#000' }} />
+          
           {gameState !== 'PLAYING' && (
-            <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-20">
-              {(gameState === 'GAMEOVER' || gameState === 'START') && (<div className="text-center mb-4">{gameState === 'GAMEOVER' && <AlertCircle className="mx-auto w-12 h-12 mb-2" style={{ color: colors.target }} />}<h2 className="text-2xl font-black">{gameState === 'START' ? 'Ready' : 'Game Over'}</h2><p className="text-slate-300">Score: {score}</p></div>)}
-              {gameState === 'PAUSED' && (<div className="text-center mb-4"><Pause className="mx-auto w-12 h-12 mb-2" style={{ color: colors.lock }} /><h2 className="text-2xl font-black">PAUSED</h2></div>)}
-              <button onClick={() => (gameState === 'PAUSED' ? setGameState('PLAYING') : startGame())} className="flex items-center gap-2 px-6 py-3 rounded-full font-bold" style={{ backgroundColor: colors.target, color: '#fff' }}><Play fill="currentColor" /> {gameState === 'START' ? 'Start' : gameState === 'PAUSED' ? 'Resume' : 'Restart'}</button>
+            <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-40 backdrop-blur-sm">
+              <button onClick={startGame} className="flex items-center gap-2 px-8 py-4 text-white font-bold rounded-full text-xl shadow-lg transition hover:scale-105" style={{ backgroundColor: getSolidColor() }}><Play fill="currentColor" /> {gameState === 'START' ? 'START' : 'RESTART'}</button>
             </div>
           )}
-        </div>
-      </div>
-
-      {/* Layer 2: Header Info - Glass HUD Top Left */}
-      <div className="absolute top-4 left-4 z-20 max-w-sm p-4 rounded-xl bg-slate-900/60 backdrop-blur-md border border-white/10 text-white shadow-lg pointer-events-none">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="w-6 h-6 bg-gradient-to-br from-purple-400 to-pink-400 rounded"></div>
-          <h1 className="text-xl sm:text-2xl font-bold">Therapy Tetris</h1>
-        </div>
-        <p className="text-sm text-gray-300 hidden sm:block">
-          Spatial planning • Eye-hand coordination training
-        </p>
-      </div>
-
-      {/* Layer 2: Controls Panel - Glass HUD Top Right */}
-      <div className="absolute top-4 right-4 z-20">
-        {/* Mobile: Settings Icon Button */}
-        <div className="md:hidden">
-          <button className="p-3 rounded-xl bg-slate-900/80 backdrop-blur-md border border-white/10 text-white hover:bg-slate-800/80 transition">
-            <Settings size={20} />
-          </button>
+          <div className="absolute top-4 left-4 text-white font-mono font-bold text-xl drop-shadow-md z-30">SCORE: {score}</div>
         </div>
 
-        {/* Desktop: Full Controls Panel */}
-        <div className="hidden md:block w-72 bg-slate-900/80 backdrop-blur-md border border-white/10 p-4 rounded-xl shadow-lg">
-          <div className="flex items-center gap-2 text-white font-semibold border-b border-white/20 pb-2">
-            <Settings size={16} /> Controls
-          </div>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-300">Score</span>
-              <span className="text-white font-mono font-bold">{score}</span>
+        {!isFullScreen && (
+          <div className="w-full lg:w-80 bg-neutral-800 p-6 rounded-xl border border-neutral-700 h-auto flex flex-col">
+            <div className="flex items-center gap-2 mb-6 text-gray-400 uppercase text-xs font-bold tracking-widest"><Settings size={14} /> Therapy Config</div>
+            <div className="space-y-8 flex-1">
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: getSolidColor() }}>Piece Opacity</label>
+                <input type="range" min="0.1" max="1.0" step="0.1" value={intensity} onChange={(e) => setIntensity(parseFloat(e.target.value))} className="w-full h-2 bg-neutral-700 rounded-lg appearance-none cursor-pointer" style={{ accentColor: getSolidColor() }} />
+              </div>
+              <div className="bg-black/30 p-4 rounded text-sm text-gray-400 space-y-2"><p>Lines: {lines}</p><p className="text-xs mt-4 pt-4 border-t border-gray-700"><span style={{ color: getSolidColor() }}>■ Falling</span>: Solid</p></div>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-300">Lines</span>
-              <span className="text-white font-mono font-bold">{lines}</span>
-            </div>
-            <p className="text-gray-400 text-xs">Arrow Keys: Move • Space: Rotate</p>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

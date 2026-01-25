@@ -1,69 +1,79 @@
 import { Link } from 'react-router-dom';
-import { Menu, X, Languages } from 'lucide-react';
+import { Menu, X, Languages, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function Navbar() {
   const { i18n } = useTranslation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const toggleLanguage = () => {
     const next = i18n.language === 'hi' ? 'en' : 'hi';
     i18n.changeLanguage(next);
   };
 
-  const navLinks = [
-    { to: '/sign-in', label: 'Sign in', mobileOnly: false },
-    { to: '/sign-up', label: 'Get Started', mobileOnly: false },
-  ];
-
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 z-40 bg-white/70 backdrop-blur-md border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <img src="/mylogo.jpeg" alt="OpenSight" className="h-8 w-auto" />
-            <span className="font-bold text-black text-lg sm:text-xl">OpenSight</span>
+      <nav 
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+          scrolled 
+            ? 'bg-white/80 backdrop-blur-xl border-b border-slate-200/50 py-3 shadow-sm' 
+            : 'bg-transparent py-5'
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+          
+          {/* Logo Section - Custom Image Restored */}
+          <Link to="/" className="flex items-center gap-3 group">
+            <img 
+              src="/mylogo.jpeg" 
+              alt="OpenSight" 
+              className="h-10 w-auto object-contain transition-transform group-hover:scale-105" 
+            />
+            <span className="font-bold text-slate-900 text-xl tracking-tight">OpenSight</span>
           </Link>
 
           {/* Desktop Actions */}
-          <div className="hidden md:flex items-center gap-6">
-            {/* Language Toggle */}
-            <motion.button
+          <div className="hidden md:flex items-center gap-4">
+            <button
               onClick={toggleLanguage}
-              className="p-2 rounded-full  cursor-pointer hover:bg-gray-100 transition flex items-center gap-1"
-              aria-label="Toggle language"
-              whileTap={{ scale: 0.9 }}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-100 transition-colors uppercase tracking-wider"
             >
-              <Languages className="w-5 h-5 text-gray-700" />
-              <span className="text-xs font-bold uppercase text-gray-700">
-                {i18n.language === 'hi' ? 'HI' : 'EN'}
-              </span>
-            </motion.button>
+              <Languages size={18} />
+              {i18n.language === 'hi' ? 'HI' : 'EN'}
+            </button>
 
-            {navLinks.map(({ to, label }) => (
-              <Link
-                key={to}
-                to={to}
-                className={`text-sm font-semibold transition-colors bg-gray-50 cursor-pointer ${
-                  label === 'Get Started'
-                    ? 'px-4 py-2 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700'
-                    : 'text-gray-700 hover:text-purple-600'
-                }`}
-              >
-                {label}
-              </Link>
-            ))}
+            <div className="h-6 w-px bg-slate-200 mx-2" />
+
+            <Link
+              to="/sign-in"
+              className="text-sm font-bold text-slate-600 hover:text-slate-900 px-4 py-2 transition-colors"
+            >
+              Log in
+            </Link>
+
+            <Link
+              to="/sign-up"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-slate-900 text-white text-sm font-bold hover:bg-slate-800 transition-all shadow-lg shadow-slate-200 hover:shadow-xl hover:-translate-y-0.5"
+            >
+              Get Started <ArrowRight size={16} />
+            </Link>
           </div>
 
-          {/* Mobile Hamburger */}
+          {/* Mobile Toggle */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-            aria-label="Toggle menu"
+            className="md:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
           >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
       </nav>
@@ -75,34 +85,33 @@ export default function Navbar() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="fixed top-16 left-0 right-0 z-30 bg-white/95 backdrop-blur-xl border-b border-gray-200 md:hidden overflow-hidden"
+            className="fixed top-[70px] left-0 right-0 z-40 bg-white border-b border-slate-200 md:hidden shadow-xl overflow-hidden"
           >
-            <div className="px-4 py-4 flex flex-col gap-3">
-              {/* Mobile Language Toggle */}
-              <div className="flex items-center justify-around py-3 border-b border-gray-200">
+            <div className="p-6 space-y-4">
+              <Link
+                to="/sign-in"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block w-full py-3 px-4 rounded-xl bg-slate-50 text-slate-900 font-bold text-center hover:bg-slate-100 transition-colors"
+              >
+                Log In
+              </Link>
+              <Link
+                to="/sign-up"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block w-full py-3 px-4 rounded-xl bg-slate-900 text-white font-bold text-center hover:bg-slate-800 transition-colors shadow-lg"
+              >
+                Get Started
+              </Link>
+              
+              <div className="border-t border-slate-100 pt-4 mt-4 flex justify-center">
                 <button
                   onClick={toggleLanguage}
-                  className="flex items-center gap-2 text-sm font-medium text-gray-700"
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-50 text-slate-700 font-bold text-sm uppercase"
                 >
-                  <Languages className="w-5 h-5" />
-                  <span>{i18n.language === 'hi' ? 'HI' : 'EN'}</span>
+                  <Languages size={18} />
+                  Switch to {i18n.language === 'hi' ? 'English' : 'Hindi'}
                 </button>
               </div>
-
-              {navLinks.map(({ to, label }) => (
-                <Link
-                  key={to}
-                  to={to}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`w-full text-center py-3 rounded-xl font-semibold transition cursor-pointer ${
-                    label === 'Get Started'
-                      ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700'
-                      : 'bg-gray-100 text-gray-900'
-                  }`}
-                >
-                  {label}
-                </Link>
-              ))}
             </div>
           </motion.div>
         )}

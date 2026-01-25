@@ -1,24 +1,24 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
-  ArrowRight,
   Gamepad2,
   Target,
   Zap,
   Sparkles,
-  CheckCircle2,
-  Menu,
-  X,
-  Github,
   Play,
+  Activity,
+  Trophy,
+  CalendarDays,
+  ArrowUpRight
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useGlobal } from "../context/GlobalContext.jsx";
 import { getGamesForCondition } from "../config/gameRegistry.js";
 import Chatbot from "../components/Chatbot.jsx";
 
-// Icon map for dynamic rendering
+// --- Configuration & Helpers ---
+
 const ICON_MAP = {
   Gamepad2,
   Target,
@@ -27,180 +27,287 @@ const ICON_MAP = {
   Play,
 };
 
+const ANIMATION_VARIANTS = {
+  container: {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.2,
+      },
+    },
+  },
+  item: {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 50 } },
+  },
+};
+
+// --- Sub-Components ---
+
+const StatCard = ({ icon: Icon, label, value, isKids, colorTheme }) => {
+  // Explicit styling map to ensure high contrast on all devices
+  const THEME_STYLES = {
+    yellow: {
+      bg: "bg-yellow-50",
+      border: "border-yellow-200",
+      textMain: "text-yellow-900",
+      textSub: "text-yellow-700",
+      iconBg: "bg-yellow-200",
+      iconColor: "text-yellow-800"
+    },
+    blue: {
+      bg: "bg-blue-50",
+      border: "border-blue-200",
+      textMain: "text-blue-900",
+      textSub: "text-blue-700",
+      iconBg: "bg-blue-200",
+      iconColor: "text-blue-800"
+    },
+    green: {
+      bg: "bg-green-50",
+      border: "border-green-200",
+      textMain: "text-green-900",
+      textSub: "text-green-700",
+      iconBg: "bg-green-200",
+      iconColor: "text-green-800"
+    },
+    slate: { // Adult Default
+      bg: "bg-white/60 backdrop-blur-xl",
+      border: "border-slate-200/60",
+      textMain: "text-slate-900",
+      textSub: "text-slate-500",
+      iconBg: "bg-slate-100",
+      iconColor: "text-slate-600"
+    }
+  };
+
+  const theme = isKids ? THEME_STYLES[colorTheme] || THEME_STYLES.yellow : THEME_STYLES.slate;
+
+  return (
+    <motion.div
+      variants={ANIMATION_VARIANTS.item}
+      className={`relative overflow-hidden rounded-2xl p-5 border transition-all duration-300 ${theme.bg} ${theme.border}`}
+    >
+      <div className="flex items-start justify-between">
+        <div>
+          <p className={`text-sm font-bold mb-1 uppercase tracking-wide ${theme.textSub} ${isKids ? 'font-nunito' : ''}`}>
+            {label}
+          </p>
+          <h3 className={`text-2xl sm:text-3xl font-black tracking-tight ${theme.textMain} ${isKids ? 'font-nunito' : ''}`}>
+            {value}
+          </h3>
+        </div>
+        <div className={`p-3 rounded-xl ${theme.iconBg} ${theme.iconColor}`}>
+          <Icon size={24} strokeWidth={isKids ? 2.5 : 2} />
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+const GameCard = ({ game, isKids }) => {
+  const IconComponent = ICON_MAP[game.iconType] || Play;
+  
+  return (
+    <motion.div
+      variants={ANIMATION_VARIANTS.item}
+      whileHover={{ y: -8, scale: 1.01 }}
+      className={`group relative flex flex-col h-full overflow-hidden rounded-[2rem] border transition-all duration-500 ${
+        isKids
+          ? "bg-white border-yellow-200 shadow-xl shadow-yellow-100/50 hover:shadow-2xl hover:shadow-yellow-200/50"
+          : "bg-white/80 border-white/60 shadow-lg shadow-slate-200/50 hover:shadow-xl hover:shadow-slate-300/50 backdrop-blur-md"
+      }`}
+    >
+      {/* Card Header Background */}
+      <div className={`absolute inset-x-0 top-0 h-32 opacity-20 transition-opacity duration-500 group-hover:opacity-30 ${
+        isKids 
+          ? "bg-gradient-to-b from-yellow-300 to-transparent" 
+          : "bg-gradient-to-b from-indigo-100 to-transparent"
+      }`} />
+
+      <div className="relative p-8 flex flex-col h-full z-10">
+        {/* Icon Container */}
+        <div className={`w-16 h-16 rounded-2xl mb-6 flex items-center justify-center shadow-lg transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3 ${
+          isKids
+            ? "bg-gradient-to-br from-yellow-400 to-orange-500 text-white"
+            : "bg-gradient-to-br from-slate-800 to-slate-900 text-white"
+        }`}>
+          <IconComponent size={32} strokeWidth={2} />
+        </div>
+
+        {/* Content */}
+        <div className="flex-1">
+          <h3 className={`text-2xl font-bold mb-3 ${isKids ? "text-slate-900 font-nunito" : "text-slate-900 tracking-tight"}`}>
+            {game.title}
+          </h3>
+          <p className={`text-base leading-relaxed mb-6 ${isKids ? "text-slate-600 font-nunito" : "text-slate-500"}`}>
+            {game.description}
+          </p>
+        </div>
+
+        {/* Action Button */}
+        <div className="mt-auto">
+          <Link
+            to={game.path}
+            className={`w-full inline-flex items-center justify-center gap-2 py-4 rounded-2xl font-bold transition-all duration-300 group-hover:gap-3 ${
+              isKids
+                ? "bg-yellow-400 hover:bg-yellow-500 text-yellow-900 shadow-lg shadow-yellow-200"
+                : "bg-slate-900 hover:bg-slate-800 text-white shadow-lg shadow-slate-200"
+            }`}
+          >
+            <span>Play Now</span>
+            <ArrowUpRight size={20} strokeWidth={3} />
+          </Link>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+// --- Main Component ---
+
 export default function Dashboard() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { userProfile, ageGroup } = useGlobal();
   const [games, setGames] = useState([]);
+  
   useEffect(() => {
     const condition = userProfile?.config?.condition;
-    console.log('User Condition:', condition);
     setGames(getGamesForCondition(condition));
   }, [userProfile]);
 
   const isKids = ageGroup === 'kid';
 
+  // Dynamic Styles based on mode
+  const bgStyle = isKids 
+    ? "bg-[#FFF8E7] selection:bg-yellow-200" // Use a solid cream color for kids background
+    : "bg-slate-50 selection:bg-indigo-100";
+
   return (
-    <div className="min-h-screen overflow-x-hidden bg-white font-sans selection:bg-purple-500/30 antialiased">
-      <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-24 md:pt-40 md:pb-32">
-        {/* Premium Greeting Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className={`mb-8 sm:mb-12 ${isKids ? 'text-center' : 'text-left'}`}
+    <div className={`min-h-screen w-full relative overflow-x-hidden ${bgStyle}`}>
+      
+      {/* Ambient Background Elements */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        <div className={`absolute top-[-10%] left-[-10%] w-[600px] h-[600px] rounded-full blur-[120px] opacity-40 mix-blend-multiply animate-blob ${
+          isKids ? "bg-yellow-200" : "bg-blue-200"
+        }`} />
+        <div className={`absolute top-[10%] right-[-10%] w-[500px] h-[500px] rounded-full blur-[100px] opacity-40 mix-blend-multiply animate-blob animation-delay-2000 ${
+          isKids ? "bg-orange-200" : "bg-purple-200"
+        }`} />
+      </div>
+
+      <main className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 pt-28 pb-24 md:pt-36">
+        
+        {/* Header Section */}
+        <motion.div 
+          initial="hidden"
+          animate="show"
+          variants={ANIMATION_VARIANTS.container}
+          className="grid lg:grid-cols-[1.2fr,1fr] gap-12 mb-20 items-end"
         >
-          <div className={`flex flex-col ${isKids ? 'items-center' : 'items-start justify-between'} gap-4 sm:gap-6`}>
-            <div>
-              <h1 className={`text-2xl sm:text-3xl md:text-4xl font-black ${isKids ? 'text-yellow-600 font-nunito' : 'text-gray-900'} mb-2`}
-                style={{
-                  textShadow: isKids
-                    ? '0 4px 12px rgba(251, 191, 36, 0.4), 0 2px 4px rgba(0,0,0,0.1)'
-                    : '0 4px 24px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.06)',
-                }}
-              >
-                {isKids 
-                  ? `Hello, ${userProfile?.name?.split(' ')[0] || 'Superstar'}! 🌟`
-                  : `Welcome back, ${userProfile?.name || 'there'}`
-                }
-              </h1>
-              <p className={`text-lg sm:text-xl ${isKids ? 'text-gray-700 font-nunito' : 'text-gray-600'} font-medium`}
-                style={{
-                  textShadow: isKids ? '0 2px 6px rgba(251, 191, 36, 0.3)' : '0 2px 8px rgba(0,0,0,0.04)',
-                }}
-              >
-                {isKids 
-                  ? 'Ready for today\'s eye adventure? 🎯'
-                  : `Continue your vision therapy journey • ${new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}`
-                }
-              </p>
-            </div>
+          {/* Greeting */}
+          <div className="space-y-4">
+            <motion.div variants={ANIMATION_VARIANTS.item}>
+              <span className={`inline-block px-4 py-1.5 rounded-full text-xs font-bold tracking-wider uppercase mb-2 ${
+                isKids ? "bg-white text-yellow-700 shadow-sm border border-yellow-100" : "bg-white text-slate-500 border border-slate-200"
+              }`}>
+                {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+              </span>
+            </motion.div>
             
-            {/* Stats Cards */}
-            <div className={`grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 ${isKids ? 'w-full max-w-md' : 'w-auto'}`}>
-              <div className={`p-3 sm:p-4 rounded-xl ${isKids ? 'bg-yellow-100 border-2 border-yellow-300' : 'bg-gray-50 border border-gray-200'}`}>
-                <div className={`text-xs sm:text-sm ${isKids ? 'text-yellow-700 font-nunito font-bold' : 'text-gray-500 font-medium'} mb-1`}>
-                  {isKids ? 'Level' : 'Condition'}
-                </div>
-                <div className={`text-lg sm:text-xl font-bold ${isKids ? 'text-yellow-800 font-nunito' : 'text-gray-900'}`}>
-                  {isKids ? '🏆 Hero' : (userProfile?.config?.condition || 'Not set')}
-                </div>
-              </div>
-              <div className={`p-3 sm:p-4 rounded-xl ${isKids ? 'bg-blue-100 border-2 border-blue-300' : 'bg-gray-50 border border-gray-200'}`}>
-                <div className={`text-xs sm:text-sm ${isKids ? 'text-blue-700 font-nunito font-bold' : 'text-gray-500 font-medium'} mb-1`}>
-                  {isKids ? 'Power' : 'Difficulty'}
-                </div>
-                <div className={`text-lg sm:text-xl font-bold ${isKids ? 'text-blue-800 font-nunito' : 'text-gray-900'}`}>
-                  {isKids ? '⚡ Super' : `${userProfile?.config?.difficulty || 5}/10`}
-                </div>
-              </div>
-              <div className={`p-3 sm:p-4 rounded-xl ${isKids ? 'bg-green-100 border-2 border-green-300' : 'bg-gray-50 border border-gray-200'}`}>
-                <div className={`text-xs sm:text-sm ${isKids ? 'text-green-700 font-nunito font-bold' : 'text-gray-500 font-medium'} mb-1`}>
-                  {isKids ? 'Days' : 'Progress'}
-                </div>
-                <div className={`text-lg sm:text-xl font-bold ${isKids ? 'text-green-800 font-nunito' : 'text-gray-900'}`}>
-                  {isKids ? '🌈 7' : '📊 Active'}
-                </div>
-              </div>
-            </div>
+            <motion.h1 
+              variants={ANIMATION_VARIANTS.item}
+              className={`text-5xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-[1] ${
+                isKids ? "text-slate-900 font-nunito" : "text-slate-900"
+              }`}
+            >
+              {isKids ? (
+                <>
+                  Hi, <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 to-orange-500 inline-block transform hover:scale-105 transition-transform cursor-default">{userProfile?.name?.split(' ')[0] || 'Hero'}!</span> 🚀
+                </>
+              ) : (
+                <>
+                  Hi, <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-700 to-indigo-600">
+                    {userProfile?.name?.split(' ')[0] || 'There'}!
+                  </span> 👋
+                </>
+              )}
+            </motion.h1>
+
+            <motion.p 
+              variants={ANIMATION_VARIANTS.item}
+              className={`text-lg sm:text-xl max-w-lg ${isKids ? "text-slate-600 font-nunito font-semibold" : "text-slate-500 font-medium"}`}
+            >
+              {isKids 
+                ? "Your eyes are ready for an adventure! Pick a game below to charge up your super vision."
+                : "Your therapy progress is looking stable. Continue your daily regimen to maintain optimal visual acuity."
+              }
+            </motion.p>
+          </div>
+
+          {/* Stats Grid - Now Stacked Vertically on Mobile, Grid on Desktop */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full">
+            <StatCard 
+              icon={Activity} 
+              label={isKids ? "Your Mission" : "Condition"} 
+              value={isKids ? "Vision Quest" : (userProfile?.config?.condition || "N/A")}
+              colorTheme="yellow"
+              isKids={isKids}
+            />
+            <StatCard 
+              icon={Zap} 
+              label={isKids ? "Super Power" : "Difficulty"} 
+              value={isKids ? "Level 5" : `${userProfile?.config?.difficulty || 5}/10`}
+              colorTheme="blue"
+              isKids={isKids}
+            />
+            <StatCard 
+              icon={isKids ? Trophy : CalendarDays} 
+              label={isKids ? "Streak" : "Adherence"} 
+              value={isKids ? "7 Days!" : "92%"}
+              colorTheme="green"
+              isKids={isKids}
+            />
           </div>
         </motion.div>
 
-        {/* Games Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="text-center max-w-5xl mx-auto px-4 sm:px-0"
-        >
-          <h2 className={`text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black text-black tracking-tight leading-[1.05] mb-4 ${isKids ? 'font-nunito' : ''}`}
-            style={{
-              textShadow: isKids
-                ? '0 4px 12px rgba(251, 191, 36, 0.4), 0 2px 4px rgba(0,0,0,0.1)'
-                : '0 4px 24px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.06)',
-            }}
-          >
-            {isKids ? '🎮 Your Therapy Games' : 'Your Therapy Games'}
-          </h2>
-        </motion.div>
+        {/* Divider */}
+        <motion.div 
+          initial={{ opacity: 0, scaleX: 0 }}
+          animate={{ opacity: 1, scaleX: 1 }}
+          transition={{ duration: 0.8, delay: 0.5 }}
+          className="h-px w-full bg-gradient-to-r from-transparent via-slate-200 to-transparent mb-12"
+        />
 
-        {/* Games Grid */}
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 max-w-6xl mx-auto px-4 sm:px-0"
-        >
-          {games.map((game) => {
-            const IconComponent = ICON_MAP[game.iconType] || Play;
-            return (
-              <motion.div
-                key={game.id}
-                whileHover={{ scale: 1.03, y: -4 }}
-                whileTap={{ scale: 0.98 }}
-                className={`p-6 sm:p-8 lg:p-10 rounded-2xl sm:rounded-[2rem] bg-white/80 backdrop-blur-md border border-gray-200/60 shadow-sm hover:shadow-2xl transition-all duration-500 group ${
-                  isKids ? 'border-4 border-yellow-300' : ''
-                }`}
-                style={{
-                  boxShadow: isKids
-                    ? '0 12px 40px rgba(251, 191, 36, 0.25), 0 6px 20px rgba(0,0,0,0.08)'
-                    : '0 8px 32px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.08)',
-                }}
-              >
-                <div
-                  className={`w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-2xl ${
-                    isKids
-                      ? 'bg-gradient-to-br from-yellow-200 to-orange-300 group-hover:scale-110 shadow-md'
-                      : 'bg-gradient-to-br from-purple-50 to-indigo-100 group-hover:scale-110 shadow-sm'
-                  } flex items-center justify-center mb-4 sm:mb-6 lg:mb-8 transition-transform duration-300`}
-                >
-                  <IconComponent className={`w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 ${
-                    isKids ? 'text-yellow-600' : 'text-purple-600'
-                  }`} strokeWidth={2} />
-                </div>
-                <h3 className={`text-lg sm:text-xl lg:text-2xl font-bold text-black mb-2 sm:mb-3 lg:mb-4 tracking-tight ${
-                  isKids ? 'font-nunito' : ''
-                }`}
-                  style={{
-                    textShadow: isKids
-                      ? '0 2px 6px rgba(251, 191, 36, 0.3)'
-                      : '0 2px 4px rgba(0,0,0,0.04)',
-                  }}
-                >
-                  {game.title}
-                </h3>
-                <p className={`text-sm sm:text-base lg:text-lg leading-relaxed mb-4 sm:mb-6 text-gray-600`}>
-                  {game.description}
-                </p>
-                <Link
-                  to={game.path}
-                  className={`inline-flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 rounded-full font-semibold transition cursor-pointer ${
-                    isKids
-                      ? 'bg-gradient-to-r from-yellow-400 to-orange-400 hover:from-yellow-500 hover:to-orange-500 text-yellow-900 shadow-lg hover:shadow-xl'
-                      : 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700 shadow-lg hover:shadow-xl'
-                  }`}
-                  style={{
-                    boxShadow: isKids
-                      ? '0 6px 20px rgba(251, 191, 36, 0.3)'
-                      : '0 6px 20px rgba(147, 51, 234, 0.25)',
-                  }}
-                >
-                  <Play className="w-4 h-4 sm:w-5 sm:h-5" /> Play
-                </Link>
+        {/* Games Section */}
+        <div className="relative">
+          <div className="flex items-center gap-3 mb-8">
+            <Gamepad2 className={isKids ? "text-yellow-500" : "text-slate-900"} size={28} />
+            <h2 className={`text-3xl font-black ${isKids ? "text-slate-900 font-nunito" : "text-slate-900"}`}>
+              {isKids ? "Choose Your Game" : "Prescribed Exercises"}
+            </h2>
+          </div>
+
+          <motion.div 
+            variants={ANIMATION_VARIANTS.container}
+            initial="hidden"
+            animate="show"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8"
+          >
+            {games.length > 0 ? (
+              games.map((game) => (
+                <GameCard key={game.id} game={game} isKids={isKids} />
+              ))
+            ) : (
+              <motion.div variants={ANIMATION_VARIANTS.item} className="col-span-full py-20 text-center rounded-3xl border-2 border-dashed border-slate-300 bg-slate-50/50">
+                <p className="text-slate-500 text-lg font-medium">No therapeutic modules currently assigned.</p>
               </motion.div>
-            );
-          })}
-        </motion.div>
-
-        {/* Empty State */}
-        {games.length === 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-center mt-24"
-          >
-            <p className="text-gray-500 text-lg">No games available for your condition.</p>
+            )}
           </motion.div>
-        )}
+        </div>
+
       </main>
 
       <Chatbot />

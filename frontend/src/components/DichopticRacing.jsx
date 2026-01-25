@@ -1,210 +1,394 @@
-import { useState, useEffect, useRef } from 'react';
-import { Car, AlertTriangle, Settings, Play, Pause, RotateCcw } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Car, AlertTriangle, Settings, Play, MoveDown, Maximize, Minimize, Pause, RotateCcw } from 'lucide-react';
 import useTherapyColors from '../hooks/useTherapyColors.js';
 import { useGlobal } from '../context/GlobalContext.jsx';
 
-const W = 400, H = 600;
-const CAR_W = 50, CAR_H = 80, OBS_W = 50, OBS_H = 50, LANES = 3, LANE_W = W / LANES;
-const INIT_SPEED = 300, MAX_SPEED = 800, INC = 20;
+// INTERNAL RESOLUTION (Fixed for Physics)
+const INTERNAL_WIDTH = 400;
+const INTERNAL_HEIGHT = 600;
 
-function laneCenter(lane) {
-  return lane * LANE_W + LANE_W / 2 - CAR_W / 2;
-}
+// GAME CONFIGURATION
+const CAR_WIDTH = 50; 
+const CAR_HEIGHT = 80;
+const OBSTACLE_WIDTH = 50;
+const OBSTACLE_HEIGHT = 50;
+const LANE_COUNT = 3;
+const LANE_WIDTH = INTERNAL_WIDTH / LANE_COUNT;
 
-export default function DichopticRacing({ onGameEnd, isFullScreen }) {
-  const { weakEye } = useGlobal();
-  const [intensity, setIntensity] = useState(1);
+// SPEED SETTINGS
+const INITIAL_SPEED = 300; 
+const MAX_SPEED = 800; 
+const SPEED_INCREMENT = 20; 
+
+const DichopticRacing = () => {
+  const { weakEye } = useGlobal(); 
+  const [intensity, setIntensity] = useState(1.0); 
   const colors = useTherapyColors(weakEye, intensity);
+  const getSolidColor = () => weakEye === 'left' ? '#FF0000' : '#0000FF';
 
-  const [gameState, setGameState] = useState('START');
-  const [score, setScore] = useState(0);
-  const [displaySpeed, setDisplaySpeed] = useState(1);
-  const [currentLane, setCurrentLane] = useState(1);
-  const startTimeRef = useRef(null);
-
-  const rAf = useRef();
-  const lastT = useRef(0);
-  const scoreR = useRef(0);
-  const speedR = useRef(INIT_SPEED);
-  const obsR = useRef([]);
-  const laneOffR = useRef(0);
-  const laneCurR = useRef(1);
   const canvasRef = useRef(null);
+  const containerRef = useRef(null); 
+  
+  const [gameState, setGameState] = useState('START'); 
+  const [score, setScore] = useState(0);
+  const [displaySpeed, setDisplaySpeed] = useState(1); 
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const [currentLane, setCurrentLane] = useState(1);
 
-  const reset = () => {
-    scoreR.current = 0;
-    speedR.current = INIT_SPEED;
-    obsR.current = [];
-    laneCurR.current = 1;
-    laneOffR.current = 0;
-    lastT.current = performance.now();
-    setScore(0);
-    setDisplaySpeed(1);
-    setCurrentLane(1);
-    setGameState('PLAYING');
-    startTimeRef.current = Date.now();
+  // Refs
+  const requestRef = useRef();
+  const lastTimeRef = useRef(0); 
+  const scoreRef = useRef(0);
+  const speedRef = useRef(INITIAL_SPEED);
+  const obstaclesRef = useRef([]);
+  const laneOffsetRef = useRef(0); 
+  const currentLaneRef = useRef(1);
+
+  const getLaneCenter = (laneIndex) => (laneIndex * LANE_WIDTH) + (LANE_WIDTH / 2) - (CAR_WIDTH / 2);
+  const getObstacleX = (laneIndex) => (laneIndex * LANE_WIDTH) + (LANE_WIDTH / 2) - (OBSTACLE_WIDTH / 2);
+
+  const toggleFullScreen = async () => {
+    if (!document.fullscreenElement) {
+      await containerRef.current.requestFullscreen().catch(err => console.error(err));
+      setIsFullScreen(true);
+    } else {
+      await document.exitFullscreen();
+      setIsFullScreen(false);
+    }
   };
 
-  const endGame = () => {
-    setGameState('GAMEOVER');
-    if (onGameEnd && startTimeRef.current) onGameEnd(scoreR.current, (Date.now() - startTimeRef.current) / 1000);
+  useEffect(() => {
+    const handleFs = () => setIsFullScreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', handleFs);
+    return () => document.removeEventListener('fullscreenchange', handleFs);
+  }, []);
+
+  // --- CONTROLS (Keyboard + Touch) ---
+  const moveLeft = () => {
+    if (currentLaneRef.current > 0) {
+      currentLaneRef.current -= 1;
+      setCurrentLane(currentLaneRef.current);
+    }
+  };
+
+  const moveRight = () => {
+    if (currentLaneRef.current < LANE_COUNT - 1) {
+      currentLaneRef.current += 1;
+      setCurrentLane(currentLaneRef.current);
+    }
+  };
+
+  const handleTouch = (e) => {
+    if (gameState !== 'PLAYING') return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX || e.touches[0].clientX;
+    const relativeX = x - rect.left;
+    
+    // Tap left side vs right side of container
+    if (relativeX < rect.width / 2) moveLeft();
+    else moveRight();
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.code === 'Space') {
+        e.preventDefault(); 
+        setGameState(prev => {
+          if (prev === 'PLAYING') return 'PAUSED';
+          if (prev === 'PAUSED') {
+             lastTimeRef.current = performance.now();
+             return 'PLAYING';
+          }
+          return prev;
+        });
+        return;
+      }
+      if (gameState !== 'PLAYING') return;
+      
+      if (e.key === 'ArrowLeft') moveLeft();
+      else if (e.key === 'ArrowRight') moveRight();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [gameState]);
+
+  // --- GAME LOOP ---
+  const updateGame = (time) => {
+    if (gameState !== 'PLAYING') return;
+
+    const deltaTime = (time - lastTimeRef.current) / 1000;
+    lastTimeRef.current = time;
+
+    if (deltaTime > 0.1) {
+      requestRef.current = requestAnimationFrame(updateGame);
+      return;
+    }
+
+    const moveDistance = speedRef.current * deltaTime;
+    laneOffsetRef.current = (laneOffsetRef.current - moveDistance) % 80;
+    obstaclesRef.current.forEach(obs => { obs.y += moveDistance; });
+
+    // Scoring & Level Up
+    if (obstaclesRef.current.length > 0 && obstaclesRef.current[0].y > INTERNAL_HEIGHT) {
+      obstaclesRef.current.shift();
+      scoreRef.current += 10;
+      setScore(scoreRef.current);
+      if (scoreRef.current % 100 === 0 && speedRef.current < MAX_SPEED) {
+        speedRef.current += SPEED_INCREMENT;
+        setDisplaySpeed(Math.floor(speedRef.current / 50)); 
+      }
+    }
+
+    // Spawn Obstacles
+    const lastObs = obstaclesRef.current[obstaclesRef.current.length - 1];
+    const minGap = 250 + (speedRef.current * 0.2); 
+    if (!lastObs || lastObs.y > minGap) { 
+      if (Math.random() < 0.05) { 
+        const lane = Math.floor(Math.random() * LANE_COUNT); 
+        obstaclesRef.current.push({ 
+          x: getObstacleX(lane), 
+          y: -100, 
+          width: OBSTACLE_WIDTH, 
+          height: OBSTACLE_HEIGHT,
+        });
+      }
+    }
+
+    // Collision
+    const pX = getLaneCenter(currentLaneRef.current);
+    const pY = INTERNAL_HEIGHT - 120;
+    const pRect = { x: pX + 10, y: pY + 10, w: CAR_WIDTH - 20, h: CAR_HEIGHT - 20 };
+    
+    for (let i = 0; i < obstaclesRef.current.length; i++) {
+      const obs = obstaclesRef.current[i];
+      const oRect = { x: obs.x + 5, y: obs.y + 5, w: obs.width - 10, h: obs.height - 10 };
+      if (pRect.x < oRect.x + oRect.w && pRect.x + pRect.w > oRect.x && pRect.y < oRect.y + oRect.h && pRect.y + pRect.h > oRect.y) {
+        setGameState('GAMEOVER');
+        obstaclesRef.current.splice(i, 1);
+        cancelAnimationFrame(requestRef.current);
+        return; 
+      }
+    }
+
+    draw();
+    requestRef.current = requestAnimationFrame(updateGame);
   };
 
   const draw = () => {
     const ctx = canvasRef.current?.getContext('2d');
-    if (!ctx) return;
-    ctx.fillStyle = colors.background;
-    ctx.fillRect(0, 0, W, H);
-    ctx.strokeStyle = colors.lock;
+    if(!ctx) return;
+    
+    // Background
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, INTERNAL_WIDTH, INTERNAL_HEIGHT);
+    ctx.fillStyle = '#0a0a0a'; 
+    ctx.fillRect(0, 0, INTERNAL_WIDTH, INTERNAL_HEIGHT);
+
+    // Lanes (Lock Color)
+    ctx.strokeStyle = colors.lock; 
     ctx.lineWidth = 4;
-    ctx.setLineDash([40, 40]);
-    ctx.lineDashOffset = laneOffR.current;
-    for (let i = 1; i < LANES; i++) {
-      ctx.beginPath();
-      ctx.moveTo(LANE_W * i, -50);
-      ctx.lineTo(LANE_W * i, H + 50);
-      ctx.stroke();
+    ctx.setLineDash([40, 40]); 
+    ctx.lineDashOffset = laneOffsetRef.current;
+
+    for (let i = 1; i < LANE_COUNT; i++) {
+        ctx.beginPath();
+        ctx.moveTo(LANE_WIDTH * i, -50);
+        ctx.lineTo(LANE_WIDTH * i, INTERNAL_HEIGHT + 50);
+        ctx.stroke();
     }
-    ctx.setLineDash([]);
-    const pX = laneCenter(laneCurR.current), pY = H - 120;
-    ctx.fillStyle = colors.target;
-    ctx.fillRect(pX, pY, CAR_W, CAR_H);
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
-    ctx.fillRect(pX + 5, pY + 10, CAR_W - 10, 15);
-    ctx.fillRect(pX + 5, pY + 50, CAR_W - 10, 10);
-    obsR.current.forEach((o) => {
-      ctx.fillStyle = colors.target;
-      ctx.fillRect(o.x, o.y, OBS_W, OBS_H);
-      ctx.strokeStyle = colors.lock;
-      ctx.lineWidth = 2;
-      ctx.strokeRect(o.x, o.y, OBS_W, OBS_H);
+    ctx.setLineDash([]); 
+
+    // Player (Solid Weak Eye Color)
+    const pX = getLaneCenter(currentLaneRef.current);
+    const pY = INTERNAL_HEIGHT - 120;
+    ctx.fillStyle = getSolidColor(); 
+    ctx.fillRect(pX, pY, CAR_WIDTH, CAR_HEIGHT);
+    
+    // Player Details
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+    ctx.fillRect(pX + 5, pY + 10, CAR_WIDTH - 10, 15); 
+    ctx.fillRect(pX + 5, pY + 50, CAR_WIDTH - 10, 10); 
+
+    // Obstacles (Variable Opacity Weak Eye Color)
+    obstaclesRef.current.forEach(obs => {
+      ctx.fillStyle = colors.target; 
+      ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
     });
   };
 
-  const update = (time) => {
-    if (gameState !== 'PLAYING') return;
-    const dt = Math.min((time - lastT.current) / 1000, 0.1);
-    lastT.current = time;
-    const move = speedR.current * dt;
-    laneOffR.current = (laneOffR.current - move) % 80;
-    obsR.current.forEach((o) => { o.y += move; });
-    if (obsR.current[0]?.y > H) {
-      obsR.current.shift();
-      scoreR.current += 10;
-      setScore(scoreR.current);
-      if (scoreR.current % 100 === 0 && speedR.current < MAX_SPEED) {
-        speedR.current += INC;
-        setDisplaySpeed(Math.floor(speedR.current / 50));
-      }
-    }
-    const last = obsR.current[obsR.current.length - 1];
-    const gap = 250 + speedR.current * 0.2;
-    if (!last || last.y > gap) {
-      if (Math.random() < 0.05) {
-        const L = Math.floor(Math.random() * LANES);
-        obsR.current.push({
-          x: L * LANE_W + LANE_W / 2 - OBS_W / 2,
-          y: -100,
-          width: OBS_W,
-          height: OBS_H,
-        });
-      }
-    }
-    const pX = laneCenter(laneCurR.current) + 10, pY = H - 110, pW = CAR_W - 20, pH = CAR_H - 20;
-    for (let i = 0; i < obsR.current.length; i++) {
-      const o = obsR.current[i];
-      const ox = o.x + 5, oy = o.y + 5, ow = OBS_W - 10, oh = OBS_H - 10;
-      if (pX < ox + ow && pX + pW > ox && pY < oy + oh && pY + pH > oy) {
-        setGameState('GAMEOVER');
-        obsR.current.splice(i, 1);
-        if (onGameEnd && startTimeRef.current) onGameEnd(scoreR.current, (Date.now() - startTimeRef.current) / 1000);
-        cancelAnimationFrame(rAf.current);
-        return;
-      }
-    }
-    draw();
-    rAf.current = requestAnimationFrame(update);
+  const resetGame = () => {
+    scoreRef.current = 0;
+    speedRef.current = INITIAL_SPEED;
+    obstaclesRef.current = [];
+    currentLaneRef.current = 1;
+    laneOffsetRef.current = 0;
+    lastTimeRef.current = performance.now(); 
+    setScore(0);
+    setDisplaySpeed(1);
+    setCurrentLane(1);
+    setGameState('PLAYING');
+    requestRef.current = requestAnimationFrame(updateGame);
+  };
+
+  const resumeGame = () => {
+    lastTimeRef.current = performance.now();
+    setGameState('PLAYING');
+    requestRef.current = requestAnimationFrame(updateGame);
   };
 
   useEffect(() => {
-    const h = (e) => {
-      if (e.code === 'Space') {
-        e.preventDefault();
-        setGameState((p) => (p === 'PLAYING' ? 'PAUSED' : p === 'PAUSED' ? 'PLAYING' : p));
-        if (gameState === 'PAUSED') lastT.current = performance.now();
-        return;
-      }
-      if (gameState !== 'PLAYING') return;
-      if (e.key === 'ArrowLeft' && laneCurR.current > 0) {
-        laneCurR.current--;
-        setCurrentLane(laneCurR.current);
-      } else if (e.key === 'ArrowRight' && laneCurR.current < LANES - 1) {
-        laneCurR.current++;
-        setCurrentLane(laneCurR.current);
-      }
-    };
-    window.addEventListener('keydown', h);
-    return () => window.removeEventListener('keydown', h);
-  }, [gameState]);
-
-  useEffect(() => {
     if (gameState === 'PLAYING') {
-      lastT.current = performance.now();
-      startTimeRef.current = startTimeRef.current || Date.now();
-      rAf.current = requestAnimationFrame(update);
-    } else draw();
-    return () => cancelAnimationFrame(rAf.current);
+      lastTimeRef.current = performance.now();
+      requestRef.current = requestAnimationFrame(updateGame);
+    } else {
+      draw(); 
+    }
+    return () => cancelAnimationFrame(requestRef.current);
   }, [gameState, intensity, currentLane, colors]);
 
-  if (isFullScreen) {
-    return (
-      <div className="h-full w-full flex items-center justify-center relative">
-        <canvas ref={canvasRef} width={W} height={H} className="max-h-full max-w-full" style={{ objectFit: 'contain', backgroundColor: '#121212' }} />
-        <div className="absolute top-4 left-4 font-mono font-bold text-white drop-shadow-lg z-20 bg-slate-900/60 backdrop-blur-md border border-white/10 px-3 py-2 rounded-xl">SCORE: {score}</div>
-        {gameState !== 'PLAYING' && (
-          <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-20">
-            {gameState === 'GAMEOVER' && (<div className="text-center mb-4"><AlertTriangle className="mx-auto w-12 h-12 mb-2" style={{ color: colors.target }} /><h2 className="text-2xl font-black">CRASHED</h2><p className="text-lg" style={{ color: colors.target }}>Score: {score}</p></div>)}
-            {gameState === 'PAUSED' && (<div className="text-center mb-4"><Pause className="mx-auto w-12 h-12 mb-2" style={{ color: colors.lock }} /><h2 className="text-2xl font-black">PAUSED</h2></div>)}
-            <div className="flex flex-col gap-2">
-              <button onClick={() => { if (gameState === 'START' || gameState === 'GAMEOVER') reset(); else if (gameState === 'PAUSED') { lastT.current = performance.now(); setGameState('PLAYING'); } }} className="flex items-center gap-2 px-6 py-3 rounded-full font-bold" style={{ backgroundColor: colors.target, color: '#fff' }}><Play fill="currentColor" /> {gameState === 'START' ? 'Start' : gameState === 'PAUSED' ? 'Continue' : 'Restart'}</button>
-              {(gameState === 'GAMEOVER' || gameState === 'PAUSED') && (<button onClick={reset} className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-600 hover:bg-slate-500 text-sm font-bold"><RotateCcw size={14} /> Restart</button>)}
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-neutral-900 font-sans text-white p-4">
+      
+      {!isFullScreen && (
+        <div className="flex items-center gap-3 mb-6">
+          <Car className="w-8 h-8" style={{ color: getSolidColor() }} />
+          <h1 className="text-3xl font-bold tracking-tighter">
+            <span style={{ color: getSolidColor() }}>{weakEye === 'left' ? 'RED' : 'BLUE'}</span> RACER <span className="text-blue-500 text-sm opacity-50 hidden sm:inline">(DICHOPTIC)</span>
+          </h1>
+        </div>
+      )}
+
+      {/* RESPONSIVE LAYOUT WRAPPER */}
+      <div className="flex flex-col lg:flex-row gap-8 items-start justify-center w-full max-w-6xl">
+        
+        {/* GAME CONTAINER */}
+        <div 
+          ref={containerRef}
+          onClick={handleTouch} // Add Touch Support
+          className={`relative w-full lg:flex-1 bg-neutral-950 flex items-center justify-center transition-all duration-300 ${
+            isFullScreen 
+              ? 'fixed inset-0 z-50' 
+              : 'border-4 border-neutral-800 rounded-lg shadow-2xl aspect-[2/3] lg:aspect-auto lg:h-[600px] lg:w-auto'
+          }`}
+        >
+          <button 
+            onClick={(e) => { e.stopPropagation(); toggleFullScreen(); }}
+            className="absolute top-4 right-4 p-2 bg-gray-800/50 hover:bg-gray-700 rounded-full text-white z-50 transition"
+          >
+            {isFullScreen ? <Minimize size={24} /> : <Maximize size={24} />}
+          </button>
+
+          <canvas
+            ref={canvasRef}
+            width={INTERNAL_WIDTH}
+            height={INTERNAL_HEIGHT}
+            className={`block shadow-2xl transition-all duration-300 ${
+              isFullScreen 
+                ? 'max-h-screen max-w-full aspect-[2/3] object-contain bg-black' 
+                : 'w-full h-full object-contain bg-black' 
+            }`}
+          />
+
+          {/* OVERLAY */}
+          {gameState !== 'PLAYING' && (
+            <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-40 backdrop-blur-sm">
+              {gameState === 'GAMEOVER' && (
+                <div className="text-center mb-6 animate-pulse">
+                  <AlertTriangle className="mx-auto w-16 h-16 mb-2" style={{ color: getSolidColor() }} />
+                  <h2 className="text-4xl font-black text-white">CRASHED!</h2>
+                  <p className="text-xl" style={{ color: getSolidColor() }}>Score: {score}</p>
+                </div>
+              )}
+              {gameState === 'PAUSED' && (
+                <div className="text-center mb-6">
+                  <Pause className="mx-auto w-16 h-16 mb-2 text-blue-500" />
+                  <h2 className="text-4xl font-black text-white">PAUSED</h2>
+                </div>
+              )}
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation(); 
+                    (gameState === 'GAMEOVER' || gameState === 'PAUSED') ? resumeGame() : resetGame()
+                  }}
+                  className="flex items-center justify-center gap-2 px-8 py-4 text-white font-bold rounded-full text-xl shadow-lg transition hover:scale-105"
+                  style={{ backgroundColor: getSolidColor() }}
+                >
+                  <Play fill="currentColor" />
+                  {gameState === 'START' ? 'START ENGINE' : 'CONTINUE'}
+                </button>
+
+                {(gameState === 'GAMEOVER' || gameState === 'PAUSED') && (
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); resetGame(); }}
+                      className="flex items-center justify-center gap-2 px-6 py-2 bg-neutral-700 hover:bg-neutral-600 text-gray-300 font-bold rounded-full text-sm"
+                    >
+                        <RotateCcw size={16} /> Restart
+                    </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div className="absolute top-4 left-4 text-white font-mono font-bold text-xl drop-shadow-md z-30 pointer-events-none">
+            SCORE: {score}
+          </div>
+        </div>
+
+        {/* SIDEBAR */}
+        {!isFullScreen && (
+          <div className="w-full lg:w-80 bg-neutral-800 p-6 rounded-xl border border-neutral-700 h-auto lg:h-[600px] flex flex-col">
+            <div className="flex items-center gap-2 mb-6 text-gray-400 uppercase text-xs font-bold tracking-widest">
+              <Settings size={14} />
+              Therapy Config
+            </div>
+
+            <div className="space-y-8 flex-1">
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: getSolidColor() }}>
+                  Obstacle Opacity
+                </label>
+                <input 
+                  type="range" 
+                  min="0.1" 
+                  max="1.0" 
+                  step="0.1"
+                  value={intensity}
+                  onChange={(e) => setIntensity(parseFloat(e.target.value))}
+                  className="w-full h-2 bg-neutral-700 rounded-lg appearance-none cursor-pointer"
+                  style={{ accentColor: getSolidColor() }}
+                />
+                <div className="flex justify-between text-xs text-gray-500 mt-2">
+                  <span>Ghost</span>
+                  <span>Solid</span>
+                </div>
+              </div>
+
+              <div className="bg-black/30 p-4 rounded text-sm text-gray-400 space-y-2">
+                <p>Press <strong>SPACE</strong> to Pause.</p>
+                <p>Use <strong>Arrow Keys</strong> to Swap Lanes.</p>
+                <p className="text-yellow-500 text-xs mt-2">Speed Level: {displaySpeed}</p>
+                <p className="text-xs mt-4 pt-4 border-t border-gray-700">
+                    <span style={{ color: getSolidColor() }}>■ Player</span>: Solid<br/>
+                    <span style={{ color: getSolidColor(), opacity: 0.5 }}>■ Obstacles</span>: Faded
+                </p>
+              </div>
+            </div>
+            
+            {/* Mobile Hint */}
+            <div className="lg:hidden text-center mt-6 p-4 bg-neutral-700/50 rounded-lg">
+               <p className="text-sm font-bold text-white">Tap Left/Right side of screen to move</p>
+            </div>
+
+            <div className="hidden lg:block text-center text-xs text-gray-500 mt-auto">
+               <MoveDown className="mx-auto mb-1 opacity-50" />
+               Arrow Keys to Move
             </div>
           </div>
         )}
       </div>
-    );
-  }
-
-  return (
-    <div className="relative w-full h-full bg-gray-900 overflow-hidden">
-      {/* Layer 1: Game Canvas - Full Screen Background */}
-      <div className="absolute inset-0 flex items-center justify-center p-4">
-        <div className="relative rounded-xl border border-white/10 overflow-hidden bg-slate-950 w-full h-full max-w-5xl max-h-[85vh]">
-          <canvas ref={canvasRef} width={W} height={H} className="block w-full h-full object-contain" style={{ aspectRatio: '16/9', backgroundColor: '#121212' }} />
-          <div className="absolute top-3 left-3 font-mono font-bold text-lg text-white bg-slate-900/60 backdrop-blur-md border border-white/10 px-3 py-2 rounded-xl">SCORE: {score}</div>
-          {gameState !== 'PLAYING' && (
-            <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-20">
-              {gameState === 'GAMEOVER' && (<div className="text-center mb-4"><AlertTriangle className="mx-auto w-12 h-12 mb-2" style={{ color: colors.target }} /><h2 className="text-2xl font-black">CRASHED</h2><p className="text-lg" style={{ color: colors.target }}>Score: {score}</p></div>)}
-              {gameState === 'PAUSED' && (<div className="text-center mb-4"><Pause className="mx-auto w-12 h-12 mb-2" style={{ color: colors.lock }} /><h2 className="text-2xl font-black">PAUSED</h2></div>)}
-              <div className="flex flex-col gap-2">
-                <button onClick={() => { if (gameState === 'START' || gameState === 'GAMEOVER') reset(); else if (gameState === 'PAUSED') { lastT.current = performance.now(); setGameState('PLAYING'); } }} className="flex items-center gap-2 px-6 py-3 rounded-full font-bold" style={{ backgroundColor: colors.target, color: '#fff' }}><Play fill="currentColor" /> {gameState === 'START' ? 'Start' : gameState === 'PAUSED' ? 'Continue' : 'Restart'}</button>
-                {(gameState === 'GAMEOVER' || gameState === 'PAUSED') && (<button onClick={reset} className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-600 hover:bg-slate-500 text-sm font-bold"><RotateCcw size={14} /> Restart</button>)}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Layer 2: Header Info - Glass HUD Top Left */}
-      <div className="absolute top-4 left-4 z-20 max-w-sm p-4 rounded-xl bg-slate-900/60 backdrop-blur-md border border-white/10 text-white shadow-lg pointer-events-none">
-        <div className="flex items-center gap-3 mb-2">
-          <Car className="w-6 h-6" style={{ color: colors.target }} />
-          <h1 className="text-xl sm:text-2xl font-bold">Racing</h1>
-        </div>
-        <p className="text-sm text-gray-300 hidden sm:block">
-          Dichoptic training • Avoid obstacles and react fast
-        </p>
-      </div>
     </div>
   );
-}
+};
+
+export default DichopticRacing;

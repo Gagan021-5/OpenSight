@@ -1,180 +1,166 @@
-import { useState, useEffect, useRef } from 'react';
-import { Crosshair, Play, Pause, AlertCircle, Settings } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Crosshair, Play, Pause, AlertCircle, Settings, Maximize, Minimize } from 'lucide-react';
 import useTherapyColors from '../hooks/useTherapyColors.js';
 import { useGlobal } from '../context/GlobalContext.jsx';
 
-/**
- * Convergence – "Zooming Target"
- * Red circle + Blue circle; user controls horizontal disparity with keys.
- * Goal: overlap → Purple fusion circle.
- */
-const W = 400;
-const H = 400;
+const INTERNAL_WIDTH = 400;
+const INTERNAL_HEIGHT = 400;
 const R = 40;
 const STEP = 8;
 const FUSION_THRESH = 12;
 
-export default function ZoomingTarget({ onGameEnd, isFullScreen }) {
+export default function ZoomingTarget({ onGameEnd }) {
   const { weakEye } = useGlobal();
   const colors = useTherapyColors(weakEye, 1);
+  // Weak eye sees Solid, Strong eye sees Reference
+  const getSolidColor = () => weakEye === 'left' ? '#FF0000' : '#0000FF';
 
+  const canvasRef = useRef(null);
+  const containerRef = useRef(null);
   const [gameState, setGameState] = useState('START');
   const [score, setScore] = useState(0);
-  const [disp, setDisp] = useState(0); // horizontal disparity: negative = crossed, positive = uncrossed
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const [disp, setDisp] = useState(0);
   const [fused, setFused] = useState(false);
-  const [fusionTime, setFusionTime] = useState(0); // Current fusion time in milliseconds
+  const [fusionTime, setFusionTime] = useState(0);
   const fuseStart = useRef(null);
-  const startTimeRef = useRef(null);
-  const canvasRef = useRef(null);
 
-  const startGame = () => {
-    setScore(0);
-    setDisp(0);
-    setFused(false);
-    setFusionTime(0); // Reset fusion time
-    fuseStart.current = null;
-    startTimeRef.current = Date.now();
-    setGameState('PLAYING');
-  };
-
-  const endGame = () => {
-    setGameState('GAMEOVER');
-    if (onGameEnd && startTimeRef.current) onGameEnd(score, (Date.now() - startTimeRef.current) / 1000);
-  };
-
-  // Red at center - disp/2, Blue at center + disp/2. When |disp| < FUSION_THRESH → fused (purple)
-  useEffect(() => {
-    if (gameState !== 'PLAYING') {
-      setFusionTime(0); // Reset fusion time when not playing
-      return;
+  const toggleFullScreen = async () => {
+    if (!document.fullscreenElement) {
+      await containerRef.current?.requestFullscreen();
+      setIsFullScreen(true);
+    } else {
+      await document.exitFullscreen();
+      setIsFullScreen(false);
     }
+  };
+
+  useEffect(() => {
+    const h = () => setIsFullScreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', h);
+    return () => document.removeEventListener('fullscreenchange', h);
+  }, []);
+
+  useEffect(() => {
+    if (gameState !== 'PLAYING') { setFusionTime(0); return; }
     const inFusion = Math.abs(disp) < FUSION_THRESH;
     if (inFusion) {
       if (!fuseStart.current) fuseStart.current = Date.now();
-      const currentTime = Date.now() - fuseStart.current;
-      setFusionTime(currentTime); // Update fusion time in milliseconds
-      const held = currentTime / 1000;
-      if (held >= 1) {
-        setScore((s) => s + 10);
-        fuseStart.current = Date.now(); // Reset timer for next point
+      const ct = Date.now() - fuseStart.current;
+      setFusionTime(ct);
+      if (ct >= 1000) {
+        setScore(s => s + 10);
+        fuseStart.current = Date.now();
       }
     } else {
       fuseStart.current = null;
-      setFusionTime(0); // Reset fusion time when not fused
+      setFusionTime(0);
     }
     setFused(inFusion);
   }, [gameState, disp]);
+
+  const draw = () => {
+    const ctx = canvasRef.current?.getContext('2d');
+    if (!ctx) return;
+    
+    // 1. Background
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, INTERNAL_WIDTH, INTERNAL_HEIGHT);
+    
+    const cx = INTERNAL_WIDTH / 2, cy = INTERNAL_HEIGHT / 2;
+    
+    // Left Eye Image (Red if weak=left) - Drawn Solid
+    ctx.fillStyle = weakEye === 'right' ? colors.lock : colors.target; 
+    ctx.beginPath();
+    ctx.arc(cx - disp / 2, cy, R, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Right Eye Image (Blue if weak=left) - Drawn as Reference
+    // Use 'screen' blend mode to simulate light mixing (Red+Blue = Magenta/Purple)
+    ctx.globalCompositeOperation = 'screen'; 
+    ctx.fillStyle = weakEye === 'right' ? colors.target : colors.lock;
+    ctx.beginPath();
+    ctx.arc(cx + disp / 2, cy, R, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
+
+    // Guide Lines (Very faint for alignment help)
+    ctx.strokeStyle = '#222';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, cy); ctx.lineTo(INTERNAL_WIDTH, cy);
+    ctx.stroke();
+  };
+
+  useEffect(() => {
+    let rAf;
+    const loop = () => { draw(); rAf = requestAnimationFrame(loop); };
+    loop();
+    return () => cancelAnimationFrame(rAf);
+  }, [disp, colors, weakEye]);
 
   useEffect(() => {
     const h = (e) => {
       if (e.code === 'Space') {
         e.preventDefault();
-        setGameState((p) => (p === 'PLAYING' ? 'PAUSED' : p === 'PAUSED' ? 'PLAYING' : p));
-        return;
+        setGameState(p => p === 'PLAYING' ? 'PAUSED' : p === 'PAUSED' ? 'PLAYING' : p);
       }
       if (gameState !== 'PLAYING') return;
-      if (e.key === 'ArrowLeft') setDisp((d) => Math.max(-120, d - STEP));
-      if (e.key === 'ArrowRight') setDisp((d) => Math.min(120, d + STEP));
+      if (e.key === 'ArrowLeft') setDisp(d => Math.max(-120, d - STEP));
+      if (e.key === 'ArrowRight') setDisp(d => Math.min(120, d + STEP));
     };
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
   }, [gameState]);
 
-  useEffect(() => {
-    const ctx = canvasRef.current?.getContext('2d');
-    if (!ctx) return;
-    ctx.fillStyle = colors.background;
-    ctx.fillRect(0, 0, W, H);
-    const cx = W / 2, cy = H / 2;
-    // Red circle (left eye / target when weak=left)
-    ctx.fillStyle = weakEye === 'right' ? colors.lock : colors.target;
-    ctx.beginPath();
-    ctx.arc(cx - disp / 2, cy, R, 0, Math.PI * 2);
-    ctx.fill();
-    // Blue circle (right eye / lock when weak=left)
-    ctx.fillStyle = weakEye === 'right' ? colors.target : colors.lock;
-    ctx.beginPath();
-    ctx.arc(cx + disp / 2, cy, R, 0, Math.PI * 2);
-    ctx.fill();
-    // Fusion: when overlapping, draw central purple
-    if (fused) {
-      ctx.fillStyle = `rgba(128,0,128,0.8)`;
-      ctx.beginPath();
-      ctx.arc(cx, cy, R * 0.7, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }, [disp, fused, colors, weakEye, gameState]);
-
-  if (isFullScreen) {
-    return (
-      <div className="h-full w-full flex items-center justify-center relative">
-        <canvas ref={canvasRef} width={W} height={H} className="max-h-full max-w-full" style={{ objectFit: 'contain', backgroundColor: '#121212' }} />
-        <div className="absolute top-4 left-4 font-mono text-white drop-shadow-lg z-20 bg-slate-900/60 backdrop-blur-md border border-white/10 px-3 py-2 rounded-xl">Score: {score}</div>
-        {gameState !== 'PLAYING' && (
-          <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-20">
-            {gameState === 'GAMEOVER' && (<div className="text-center mb-4"><AlertCircle className="mx-auto w-12 h-12 mb-2" style={{ color: colors.target }} /><h2 className="text-2xl font-black">Done</h2><p className="text-lg text-slate-300">Score: {score}</p></div>)}
-            {gameState === 'PAUSED' && (<div className="text-center mb-4"><Pause className="mx-auto w-12 h-12 mb-2" style={{ color: colors.lock }} /><h2 className="text-2xl font-black">PAUSED</h2></div>)}
-            <button onClick={() => (gameState === 'PAUSED' ? setGameState('PLAYING') : startGame())} className="flex items-center gap-2 px-6 py-3 rounded-full font-bold" style={{ backgroundColor: colors.target, color: '#fff' }}><Play fill="currentColor" /> {gameState === 'START' ? 'Start' : gameState === 'PAUSED' ? 'Resume' : 'Play again'}</button>
-          </div>
-        )}
-      </div>
-    );
-  }
-
   return (
-    <div className="relative w-full h-full bg-gray-900 overflow-hidden">
-      {/* Layer 1: Game Canvas - Full Screen Background */}
-      <div className="absolute inset-0 flex items-center justify-center p-4">
-        <div className="relative rounded-xl border border-white/10 overflow-hidden bg-slate-950 w-full h-full max-w-5xl max-h-[85vh]">
-          <canvas ref={canvasRef} width={W} height={H} className="block w-full h-full object-contain" style={{ aspectRatio: '16/9', backgroundColor: '#121212' }} />
-          <div className="absolute top-3 left-3 font-mono font-bold text-lg text-white bg-slate-900/60 backdrop-blur-md border border-white/10 px-3 py-2 rounded-xl">Score: {score}</div>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-neutral-900 font-sans text-white p-4">
+      {!isFullScreen && (
+        <div className="flex items-center gap-3 mb-6">
+          <Crosshair className="w-8 h-8" style={{ color: getSolidColor() }} />
+          <h1 className="text-3xl font-bold tracking-tighter">
+            <span style={{ color: getSolidColor() }}>ZOOM</span> TARGET <span className="text-blue-500 text-sm opacity-50 hidden sm:inline">(CONVERGENCE)</span>
+          </h1>
+        </div>
+      )}
+
+      {/* RESPONSIVE LAYOUT */}
+      <div className="flex flex-col lg:flex-row gap-8 items-start justify-center w-full max-w-6xl">
+        
+        {/* Game Area */}
+        <div ref={containerRef} className={`relative w-full lg:flex-1 bg-neutral-950 flex items-center justify-center transition-all duration-300 ${isFullScreen ? 'fixed inset-0 z-50' : 'border-4 border-neutral-800 rounded-lg shadow-2xl aspect-square lg:h-[600px] lg:w-auto'}`}>
+          <button onClick={toggleFullScreen} className="absolute top-4 right-4 p-2 bg-gray-800/50 hover:bg-gray-700 rounded-full text-white z-50 transition">
+            {isFullScreen ? <Minimize size={24} /> : <Maximize size={24} />}
+          </button>
+          <canvas ref={canvasRef} width={INTERNAL_WIDTH} height={INTERNAL_HEIGHT} className={`block shadow-2xl ${isFullScreen ? 'max-h-screen max-w-full object-contain' : 'w-full h-full object-contain'}`} style={{ backgroundColor: '#000' }} />
+          
           {gameState !== 'PLAYING' && (
-            <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-20">
-              {gameState === 'GAMEOVER' && (<div className="text-center mb-4"><AlertCircle className="mx-auto w-12 h-12 mb-2" style={{ color: colors.target }} /><h2 className="text-2xl font-black">Done</h2><p className="text-lg text-slate-300">Score: {score}</p></div>)}
-              {gameState === 'PAUSED' && (<div className="text-center mb-4"><Pause className="mx-auto w-12 h-12 mb-2" style={{ color: colors.lock }} /><h2 className="text-2xl font-black">PAUSED</h2></div>)}
-              <button onClick={() => (gameState === 'PAUSED' ? setGameState('PLAYING') : startGame())} className="flex items-center gap-2 px-6 py-3 rounded-full font-bold" style={{ backgroundColor: colors.target, color: '#fff' }}><Play fill="currentColor" /> {gameState === 'START' ? 'Start' : gameState === 'PAUSED' ? 'Resume' : 'Play again'}</button>
+            <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-40 backdrop-blur-sm">
+              {gameState === 'PAUSED' && <div className="text-center mb-6"><Pause className="mx-auto w-16 h-16 mb-2 text-blue-500" /><h2 className="text-4xl font-black">PAUSED</h2></div>}
+              {gameState === 'GAMEOVER' && <div className="text-center mb-6"><AlertCircle className="mx-auto w-16 h-16 mb-2" style={{ color: getSolidColor() }} /><h2 className="text-4xl font-black">FINISHED</h2></div>}
+              <button onClick={() => setGameState('PLAYING')} className="flex items-center gap-2 px-8 py-4 text-white font-bold rounded-full text-xl shadow-lg transition hover:scale-105" style={{ backgroundColor: getSolidColor() }}><Play fill="currentColor" /> {gameState === 'START' ? 'START' : 'RESUME'}</button>
             </div>
           )}
-        </div>
-      </div>
-
-      {/* Layer 2: Header Info - Glass HUD Top Left */}
-      <div className="absolute top-4 left-4 z-20 max-w-sm p-4 rounded-xl bg-slate-900/60 backdrop-blur-md border border-white/10 text-white shadow-lg pointer-events-none">
-        <div className="flex items-center gap-3 mb-2">
-          <Crosshair className="w-6 h-6" style={{ color: colors.target }} />
-          <h1 className="text-xl sm:text-2xl font-bold">Zooming Target</h1>
-        </div>
-        <p className="text-sm text-gray-300 hidden sm:block">
-          Convergence training • Overlap circles to fuse
-        </p>
-      </div>
-
-      {/* Layer 2: Controls Panel - Glass HUD Top Right */}
-      <div className="absolute top-4 right-4 z-20">
-        {/* Mobile: Settings Icon Button */}
-        <div className="md:hidden">
-          <button className="p-3 rounded-xl bg-slate-900/80 backdrop-blur-md border border-white/10 text-white hover:bg-slate-800/80 transition">
-            <Settings size={20} />
-          </button>
-        </div>
-
-        {/* Desktop: Full Controls Panel */}
-        <div className="hidden md:block w-72 bg-slate-900/80 backdrop-blur-md border border-white/10 p-4 rounded-xl shadow-lg">
-          <div className="flex items-center gap-2 text-white font-semibold border-b border-white/20 pb-2">
-            <Settings size={16} /> Controls
-          </div>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-300">Score</span>
-              <span className="text-white font-mono font-bold">{score}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-300">Fusion Time</span>
-              <span className="text-white font-mono font-bold">{Math.round(fusionTime)}ms</span>
-            </div>
-            <p className="text-gray-400 text-xs">Arrow Keys: Move • Hold to fuse</p>
+          <div className="absolute top-4 left-4 text-white font-mono font-bold text-xl drop-shadow-md z-30">
+            SCORE: {score} <span className="text-xs text-gray-400 block mt-1">Fusion Time: {Math.round(fusionTime)}ms</span>
           </div>
         </div>
+
+        {/* Sidebar */}
+        {!isFullScreen && (
+          <div className="w-full lg:w-80 bg-neutral-800 p-6 rounded-xl border border-neutral-700 h-auto flex flex-col">
+            <div className="flex items-center gap-2 mb-6 text-gray-400 uppercase text-xs font-bold tracking-widest"><Settings size={14} /> Instructions</div>
+            <div className="space-y-4 flex-1 text-sm text-gray-300">
+              <p>Use <strong className="text-white">Arrow Keys</strong> to move the circles horizontally.</p>
+              <p>Your goal is to make them <strong>overlap perfectly</strong> until the center turns purple/white.</p>
+              <p>Hold the fusion to gain points.</p>
+            </div>
+            {/* Mobile Hint */}
+            <div className="lg:hidden text-center mt-6 p-4 bg-neutral-700/50 rounded-lg">
+               <p className="text-sm font-bold text-white">Tap Left/Right side of screen to adjust</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

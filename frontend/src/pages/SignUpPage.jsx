@@ -1,150 +1,224 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Eye, Mail, Lock, User, Loader2 } from 'lucide-react';
+import { Mail, Lock, User, Loader2, ArrowRight, ArrowLeft, Baby, UserCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useGlobal } from '../context/GlobalContext.jsx';
 
 export default function SignUpPage() {
   const { register } = useGlobal();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [ageGroup, setAgeGroup] = useState('adult');
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    ageGroup: 'adult' 
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const handleChange = (e) => {
+    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+
     try {
-      if (!email || !password || !name) {
-        setError('Please fill in all fields');
-        return;
+      if (!formData.email || !formData.password || !formData.name) {
+        throw new Error('Please fill in all fields');
       }
-      if (password.length < 6) {
-        setError('Password must be at least 6 characters');
-        return;
+      if (formData.password.length < 6) {
+        throw new Error('Password must be at least 6 characters');
       }
 
       await register({
-        email: email.trim(),
-        password,
-        name: name.trim() || 'User',
-        ageGroup,
+        ...formData,
+        email: formData.email.trim(),
+        name: formData.name.trim()
       });
       navigate('/dashboard', { replace: true });
     } catch (err) {
-      setError(err.response?.data?.error || 'Registration failed');
+      setError(err.message || err.response?.data?.error || 'Registration failed');
     } finally {
       setLoading(false);
     }
   };
 
-  const inputClass = "w-full pl-12 pr-4 py-3.5 rounded-xl border border-border bg-surface text-primary placeholder:text-primary-muted/70 focus:outline-none focus:border-[#4f46e5] focus:ring-2 focus:ring-[#4f46e5]/20 transition";
+  const inputClass = "w-full pl-11 pr-4 py-3.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium";
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left: abstract graphic */}
-      <div className="hidden lg:flex lg:w-[50%] relative bg-gradient-to-br from-[#0d9488] via-[#0f766e] to-[#134e4a] overflow-hidden">
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-1/3 right-1/4 w-56 h-56 rounded-full bg-white/30 blur-3xl" />
-          <div className="absolute bottom-1/4 left-1/3 w-40 h-40 rounded-full bg-[#5eead4]/40 blur-3xl" />
+    <div className="min-h-screen flex bg-white font-sans selection:bg-indigo-100">
+      {/* Left: Brand Side */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-indigo-900">
+        <div className="absolute inset-0">
+          <div className="absolute top-1/4 left-1/4 w-[800px] h-[800px] bg-purple-500/30 rounded-full blur-[120px] mix-blend-screen" />
+          <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-blue-500/20 rounded-full blur-[120px] mix-blend-screen" />
         </div>
-        <svg className="absolute inset-0 w-full h-full opacity-10" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <pattern id="signup-grid" width="32" height="32" patternUnits="userSpaceOnUse">
-              <path d="M 32 0 L 0 0 0 32" fill="none" stroke="white" strokeWidth="0.5" />
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#signup-grid)" />
-        </svg>
-        <div className="relative z-10 flex flex-col justify-center px-12 xl:px-16">
-          <Eye className="w-14 h-14 text-white/90 mb-6" strokeWidth={1.5} />
-          <h2 className="text-2xl xl:text-3xl font-bold text-white/95 mb-3">Create your account</h2>
-          <p className="text-white/70 text-lg max-w-sm">Join OpenSight and start your vision therapy journey. Free, no credit card.</p>
+        
+        <div className="relative z-10 w-full flex flex-col justify-between p-12 text-white">
+          <Link to="/" className="flex items-center gap-3 w-fit group">
+            <div className="p-2 bg-white/10 rounded-xl backdrop-blur-md group-hover:bg-white/20 transition-colors">
+              <ArrowLeft size={20} />
+            </div>
+            <span className="font-medium opacity-80 group-hover:opacity-100 transition-opacity">Back to Home</span>
+          </Link>
+
+          <div className="space-y-6 max-w-lg">
+            {/* Custom Logo Restored */}
+            <img 
+              src="/mylogo.jpeg" 
+              alt="OpenSight Logo" 
+              className="h-20 w-auto rounded-xl shadow-lg border border-white/10"
+            />
+
+            <h2 className="text-4xl font-bold tracking-tight">Start your journey to better vision.</h2>
+            <ul className="space-y-4 text-indigo-100 text-lg">
+              <li className="flex items-center gap-3">
+                <div className="w-6 h-6 rounded-full bg-indigo-500/50 flex items-center justify-center text-xs">✓</div>
+                Clinically inspired games
+              </li>
+              <li className="flex items-center gap-3">
+                <div className="w-6 h-6 rounded-full bg-indigo-500/50 flex items-center justify-center text-xs">✓</div>
+                Progress tracking & analytics
+              </li>
+              <li className="flex items-center gap-3">
+                <div className="w-6 h-6 rounded-full bg-indigo-500/50 flex items-center justify-center text-xs">✓</div>
+                Always free & open source
+              </li>
+            </ul>
+          </div>
+
+          <div className="text-sm text-indigo-200/60">
+            By signing up, you agree to our Terms and Privacy Policy.
+          </div>
         </div>
       </div>
 
-      {/* Right: form */}
-      <div className="w-full lg:w-[50%] flex items-center justify-center p-6 md:p-10 bg-bg overflow-y-auto">
-        <motion.div
-          initial={{ opacity: 0, x: 12 }}
+      {/* Right: Form Side */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 md:p-12 bg-white overflow-y-auto">
+        <motion.div 
+          initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.4 }}
-          className="w-full max-w-md py-4"
+          className="w-full max-w-md space-y-8"
         >
-          <div className="lg:hidden flex items-center gap-2 mb-8">
-            <Eye className="w-8 h-8 text-primary" />
-            <span className="font-semibold text-primary">OpenSight</span>
-          </div>
-          <h1 className="text-2xl md:text-3xl font-bold text-primary mb-2">Sign up</h1>
-          <p className="text-primary-muted mb-8">Create an account to get started.</p>
+          <div className="text-center lg:text-left">
+            <Link to="/" className="lg:hidden inline-flex items-center gap-2 mb-8 text-slate-500 font-medium">
+              <ArrowLeft size={18} /> Back
+            </Link>
 
-          {error && (
-            <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
-              {error}
+            {/* Mobile Logo */}
+            <div className="lg:hidden mb-6 flex justify-center">
+               <img src="/mylogo.jpeg" alt="Logo" className="h-12 w-auto" />
             </div>
-          )}
+
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Create Account</h1>
+            <p className="mt-2 text-slate-500">
+              Already have an account? <Link to="/sign-in" className="font-bold text-indigo-600 hover:text-indigo-700">Sign in</Link>
+            </p>
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
+            {error && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="p-4 rounded-xl bg-red-50 border border-red-100 text-red-600 text-sm font-medium flex items-center gap-2"
+              >
+                <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                {error}
+              </motion.div>
+            )}
+
             <div>
-              <label className="block text-sm font-medium text-primary mb-2">Name</label>
+              <label className="block text-sm font-bold text-slate-700 mb-2">Full Name</label>
               <div className="relative">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary-muted" />
-                <input type="text" value={name} onChange={(e) => setName(e.target.value)} className={inputClass} placeholder="Your name" />
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  className={inputClass}
+                  placeholder="John Doe"
+                />
               </div>
             </div>
+
             <div>
-              <label className="block text-sm font-medium text-primary mb-2">Email</label>
+              <label className="block text-sm font-bold text-slate-700 mb-2">Email Address</label>
               <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary-muted" />
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className={inputClass} placeholder="you@example.com" />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className={inputClass}
+                  placeholder="name@example.com"
+                />
               </div>
             </div>
+
             <div>
-              <label className="block text-sm font-medium text-primary mb-2">Password (min 6)</label>
+              <label className="block text-sm font-bold text-slate-700 mb-2">Password</label>
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary-muted" />
-                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} className={inputClass} placeholder="••••••••" />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                <input
+                  type="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className={inputClass}
+                  placeholder="Min. 6 characters"
+                />
               </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-primary mb-2">I am a</label>
-              <div className="flex gap-3">
+
+            <div className="pt-2">
+              <label className="block text-sm font-bold text-slate-700 mb-3">Who is this for?</label>
+              <div className="grid grid-cols-2 gap-4">
                 <button
                   type="button"
-                  onClick={() => setAgeGroup('kid')}
-                  className={`flex-1 py-3.5 rounded-xl border-2 font-medium transition ${
-                    ageGroup === 'kid' ? 'border-[#4f46e5] bg-[#4f46e5]/5 text-[#4f46e5]' : 'border-border text-primary-muted hover:border-border-focus'
+                  onClick={() => setFormData(p => ({ ...p, ageGroup: 'kid' }))}
+                  className={`relative p-4 rounded-xl border-2 transition-all text-left flex flex-col gap-2 ${
+                    formData.ageGroup === 'kid'
+                      ? 'border-yellow-400 bg-yellow-50 text-yellow-900 ring-1 ring-yellow-400'
+                      : 'border-slate-200 hover:border-slate-300 text-slate-600'
                   }`}
                 >
-                  Kid
+                  <Baby size={24} className={formData.ageGroup === 'kid' ? 'text-yellow-600' : 'text-slate-400'} />
+                  <span className="font-bold">A Child</span>
                 </button>
+
                 <button
                   type="button"
-                  onClick={() => setAgeGroup('adult')}
-                  className={`flex-1 py-3.5 rounded-xl border-2 font-medium transition ${
-                    ageGroup === 'adult' ? 'border-[#4f46e5] bg-[#4f46e5]/5 text-[#4f46e5]' : 'border-border text-primary-muted hover:border-border-focus'
+                  onClick={() => setFormData(p => ({ ...p, ageGroup: 'adult' }))}
+                  className={`relative p-4 rounded-xl border-2 transition-all text-left flex flex-col gap-2 ${
+                    formData.ageGroup === 'adult'
+                      ? 'border-indigo-600 bg-indigo-50 text-indigo-900 ring-1 ring-indigo-600'
+                      : 'border-slate-200 hover:border-slate-300 text-slate-600'
                   }`}
                 >
-                  Adult
+                  <UserCheck size={24} className={formData.ageGroup === 'adult' ? 'text-indigo-600' : 'text-slate-400'} />
+                  <span className="font-bold">Myself (Adult)</span>
                 </button>
               </div>
             </div>
+
             <button
               type="submit"
-              disabled={loading || !email || !password || !name}
-              className="w-full py-4 rounded-xl font-semibold text-white bg-gradient-to-r from-[#4f46e5] to-[#7c3aed] hover:opacity-95 transition shadow-card disabled:opacity-70 flex items-center justify-center gap-2 cursor-pointer"
+              disabled={loading}
+              className="w-full py-4 rounded-xl bg-slate-900 text-white font-bold text-lg shadow-xl shadow-slate-200 hover:shadow-2xl hover:-translate-y-1 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-6"
             >
-              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Create account'}
+              {loading ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <>Create Account <ArrowRight size={20} /></>
+              )}
             </button>
           </form>
-
-          <p className="mt-8 text-center text-primary-muted text-sm">
-            Already have an account? <Link to="/sign-in" className="font-semibold text-[#4f46e5] hover:underline">Sign in</Link>
-          </p>
         </motion.div>
       </div>
     </div>

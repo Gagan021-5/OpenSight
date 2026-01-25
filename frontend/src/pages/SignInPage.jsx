@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Eye, Mail, Lock, Loader2, ArrowRight } from 'lucide-react';
+import { Mail, Lock, Loader2, ArrowRight, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useGlobal } from '../context/GlobalContext.jsx';
 
@@ -31,91 +31,131 @@ export default function SignInPage() {
   };
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left: abstract graphic (hidden on small screens) */}
-      <div className="hidden lg:flex lg:w-[50%] relative bg-gradient-to-br from-primary via-[#334155] to-[#0f172a] overflow-hidden">
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full bg-secondary/40 blur-3xl" />
-          <div className="absolute bottom-1/3 right-1/4 w-48 h-48 rounded-full bg-[#7c3aed]/30 blur-3xl" />
+    <div className="min-h-screen flex bg-white font-sans selection:bg-indigo-100">
+      {/* Left: Brand Side (Hidden on Mobile) */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-slate-900">
+        <div className="absolute inset-0">
+          <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-indigo-500/20 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-purple-500/20 rounded-full blur-[120px] translate-y-1/2 -translate-x-1/2" />
         </div>
-        <svg className="absolute inset-0 w-full h-full opacity-10" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <pattern id="auth-grid" width="32" height="32" patternUnits="userSpaceOnUse">
-              <path d="M 32 0 L 0 0 0 32" fill="none" stroke="white" strokeWidth="0.5" />
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#auth-grid)" />
-        </svg>
-        <div className="relative z-10 flex flex-col justify-center px-12 xl:px-16">
-          <Eye className="w-14 h-14 text-white/90 mb-6" strokeWidth={1.5} />
-          <h2 className="text-2xl xl:text-3xl font-bold text-white/95 mb-3">OpenSight</h2>
-          <p className="text-white/70 text-lg max-w-sm">Vision therapy, in the browser. Sign in to continue your sessions.</p>
+        
+        <div className="relative z-10 w-full flex flex-col justify-between p-12 text-white">
+          <Link to="/" className="flex items-center gap-3 w-fit group">
+            <div className="p-2 bg-white/10 rounded-xl backdrop-blur-md group-hover:bg-white/20 transition-colors">
+              <ArrowLeft size={20} />
+            </div>
+            <span className="font-medium opacity-80 group-hover:opacity-100 transition-opacity">Back to Home</span>
+          </Link>
+
+          <div className="space-y-6 max-w-lg">
+            <img 
+              src="/mylogo.jpeg" 
+              alt="OpenSight Logo" 
+              className="h-20 w-auto rounded-xl shadow-2xl shadow-indigo-500/20"
+            />
+            
+            <h2 className="text-4xl font-bold tracking-tight">Welcome back to OpenSight.</h2>
+            <p className="text-lg text-slate-300 leading-relaxed">
+              Your personalized vision therapy dashboard is ready. Continue your progress and track your improvements today.
+            </p>
+          </div>
+
+          <div className="flex gap-4 text-sm text-slate-500">
+            <span>© 2025 OpenSight</span>
+            <span>•</span>
+            <Link to="#" className="hover:text-slate-300">Privacy</Link>
+            <Link to="#" className="hover:text-slate-300">Terms</Link>
+          </div>
         </div>
       </div>
 
-      {/* Right: form */}
-      <div className="w-full lg:w-[50%] flex items-center justify-center p-6 md:p-10 bg-bg">
-        <motion.div
-          initial={{ opacity: 0, x: 12 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.4 }}
-          className="w-full max-w-md"
+      {/* Right: Form Side */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 md:p-12">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-md space-y-8"
         >
-          <div className="lg:hidden flex items-center gap-2 mb-8">
-            <Eye className="w-8 h-8 text-primary" />
-            <span className="font-semibold text-primary">OpenSight</span>
+          <div className="text-center lg:text-left">
+            <Link to="/" className="lg:hidden inline-flex items-center gap-2 mb-8 text-slate-500 font-medium">
+              <ArrowLeft size={18} /> Back
+            </Link>
+            
+            {/* Mobile Logo */}
+            <div className="lg:hidden mb-6 flex justify-center">
+               <img src="/mylogo.jpeg" alt="Logo" className="h-12 w-auto" />
+            </div>
+
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Sign in</h1>
+            <p className="mt-2 text-slate-500">
+              New here? <Link to="/sign-up" className="font-bold text-indigo-600 hover:text-indigo-700">Create an account</Link>
+            </p>
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold text-primary mb-2">Welcome back</h1>
-          <p className="text-primary-muted mb-8">Sign in to your account to continue.</p>
 
-          {error && (
-            <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
-              {error}
-            </div>
-          )}
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {error && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="p-4 rounded-xl bg-red-50 border border-red-100 text-red-600 text-sm font-medium flex items-center gap-2"
+              >
+                <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                {error}
+              </motion.div>
+            )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label className="block text-sm font-medium text-primary mb-2">Email</label>
-              <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary-muted" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-border bg-surface text-primary placeholder:text-primary-muted/70 focus:outline-none focus:border-[#4f46e5] focus:ring-2 focus:ring-[#4f46e5]/20 transition"
-                  placeholder="you@example.com"
-                />
+            <div className="space-y-5">
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Email Address</label>
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="w-full pl-11 pr-4 py-3.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium"
+                    placeholder="name@example.com"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Password</label>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="w-full pl-11 pr-4 py-3.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium"
+                    placeholder="••••••••"
+                  />
+                </div>
               </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-primary mb-2">Password</label>
-              <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary-muted" />
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-border bg-surface text-primary placeholder:text-primary-muted/70 focus:outline-none focus:border-[#4f46e5] focus:ring-2 focus:ring-[#4f46e5]/20 transition"
-                  placeholder="••••••••"
-                />
-              </div>
+
+            {/* Forgot Password Link Removed */}
+            <div className="flex items-center">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+                <span className="text-sm text-slate-600 font-medium">Remember me</span>
+              </label>
             </div>
+
             <button
               type="submit"
-              disabled={loading || !email || !password}
-              className="w-full py-4 rounded-xl font-semibold text-white bg-gradient-to-r from-[#4f46e5] to-[#7c3aed] hover:opacity-95 transition shadow-card disabled:opacity-70 flex items-center justify-center gap-2 cursor-pointer"
+              disabled={loading}
+              className="w-full py-4 rounded-xl bg-slate-900 text-white font-bold text-lg shadow-xl shadow-slate-200 hover:shadow-2xl hover:-translate-y-1 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Sign in <ArrowRight className="w-4 h-4" /></>}
+              {loading ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <>Sign In <ArrowRight size={20} /></>
+              )}
             </button>
           </form>
-
-          <p className="mt-8 text-center text-primary-muted text-sm">
-            Don&apos;t have an account?{' '}
-            <Link to="/sign-up" className="font-semibold text-[#4f46e5] hover:underline">Sign up</Link>
-          </p>
         </motion.div>
       </div>
     </div>

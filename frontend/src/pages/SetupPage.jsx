@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useGlobal } from '../context/GlobalContext.jsx';
-import { Eye, Target, Settings, Home } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Eye, Target, Settings, Home, CheckCircle2, AlertCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function SetupPage() {
   const { updateConfig, ageGroup } = useGlobal();
@@ -30,103 +30,166 @@ export default function SetupPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-white antialiased">
+    <div className={`min-h-screen w-full relative overflow-hidden flex items-center justify-center p-4 ${isKids ? 'bg-amber-50' : 'bg-slate-50'}`}>
+      
+      {/* Background Ambience */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <div className={`absolute top-0 right-0 w-[600px] h-[600px] rounded-full blur-[120px] opacity-30 mix-blend-multiply animate-blob ${isKids ? 'bg-yellow-200' : 'bg-indigo-200'}`} />
+        <div className={`absolute bottom-0 left-0 w-[600px] h-[600px] rounded-full blur-[120px] opacity-30 mix-blend-multiply animate-blob animation-delay-2000 ${isKids ? 'bg-orange-200' : 'bg-blue-200'}`} />
+      </div>
+
       <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        className={`w-full max-w-lg rounded-2xl shadow-2xl p-8 bg-white/80 backdrop-blur-md border border-gray-200/60`}
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="relative z-10 w-full max-w-xl bg-white/70 backdrop-blur-xl border border-white/50 shadow-2xl rounded-[2rem] overflow-hidden"
       >
-        <div className="text-center mb-8">
-          <Eye className={`w-14 h-14 mx-auto mb-3 ${isKids ? 'text-yellow-600' : 'text-indigo-600'}`} />
-          <h1 className={`text-2xl font-black text-black mb-2 ${isKids ? 'font-nunito' : ''}`}>
-            {isKids ? '⚙️ Mission Settings' : 'Therapy profile'}
+        {/* Header Bar */}
+        <div className={`p-8 pb-6 text-center border-b ${isKids ? 'border-yellow-100 bg-yellow-50/50' : 'border-slate-100 bg-slate-50/50'}`}>
+          <div className={`w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center shadow-lg transform rotate-3 ${
+             isKids ? 'bg-gradient-to-br from-yellow-300 to-orange-400 text-white' : 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white'
+          }`}>
+            <Settings size={32} strokeWidth={1.5} />
+          </div>
+          <h1 className={`text-3xl font-black mb-2 ${isKids ? 'text-slate-900 font-nunito' : 'text-slate-900 tracking-tight'}`}>
+            {isKids ? 'Mission Control ⚙️' : 'Therapy Configuration'}
           </h1>
-          <p className="text-gray-700 text-sm mt-1">
-            {isKids ? 'Set up your training, Captain!' : 'Configure your vision therapy'}
+          <p className={`text-lg ${isKids ? 'text-slate-600 font-nunito' : 'text-slate-500'}`}>
+            {isKids ? 'Set up your training parameters, Captain!' : 'Customize your visual therapy regimen.'}
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className={`block text-sm font-semibold mb-2 text-gray-700`}>
-              <Target className="inline w-4 h-4 mr-1" />
-              {isKids ? 'Which eye are we training?' : 'Weak eye'}
-            </label>
-            <div className="grid grid-cols-3 gap-2">
-              {['left', 'right', 'both'].map((eye) => (
-                <button
-                  key={eye}
-                  type="button"
-                  onClick={() => setConfig({ ...config, weakEye: eye })}
-                  className={`py-3 rounded-xl border-2 font-medium transition cursor-pointer ${
-                    config.weakEye === eye
-                      ? isKids ? 'border-yellow-500 bg-yellow-100 text-yellow-800' : 'border-indigo-600 bg-indigo-50 text-indigo-700'
-                      : 'border-gray-200 text-gray-600 hover:border-gray-300'
+        <div className="p-8 pt-6">
+          <form onSubmit={handleSubmit} className="space-y-8">
+            
+            {/* Eye Selector */}
+            <div className="space-y-3">
+              <label className={`block text-sm font-bold uppercase tracking-wider ${isKids ? 'text-yellow-700' : 'text-slate-500'}`}>
+                {isKids ? '1. Target Eye' : 'Target Eye'}
+              </label>
+              <div className="grid grid-cols-3 gap-3">
+                {['left', 'right', 'both'].map((eye) => {
+                  const isActive = config.weakEye === eye;
+                  return (
+                    <button
+                      key={eye}
+                      type="button"
+                      onClick={() => setConfig({ ...config, weakEye: eye })}
+                      className={`relative overflow-hidden group py-4 px-2 rounded-2xl border-2 transition-all duration-200 font-bold text-sm sm:text-base ${
+                        isActive
+                          ? isKids 
+                            ? 'border-yellow-400 bg-yellow-50 text-yellow-900 shadow-md transform scale-[1.02]' 
+                            : 'border-indigo-600 bg-indigo-50 text-indigo-700 shadow-md transform scale-[1.02]'
+                          : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+                      }`}
+                    >
+                      {isActive && <div className={`absolute inset-0 opacity-10 ${isKids ? 'bg-yellow-400' : 'bg-indigo-600'}`} />}
+                      <span className="relative z-10 flex flex-col items-center gap-1">
+                        <Eye size={20} className={isActive ? (isKids ? 'text-yellow-600' : 'text-indigo-600') : 'text-slate-400'} />
+                        {eye === 'both' ? 'Both' : eye.charAt(0).toUpperCase() + eye.slice(1)}
+                      </span>
+                      {isActive && (
+                        <motion.div layoutId="check" className="absolute top-2 right-2">
+                          <CheckCircle2 size={14} className={isKids ? 'text-yellow-600' : 'text-indigo-600'} />
+                        </motion.div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Condition Selector */}
+            <div className="space-y-3">
+              <label className={`block text-sm font-bold uppercase tracking-wider ${isKids ? 'text-yellow-700' : 'text-slate-500'}`}>
+                {isKids ? '2. Mission Type' : 'Clinical Condition'}
+              </label>
+              <div className="relative">
+                <select
+                  value={config.condition}
+                  onChange={(e) => setConfig({ ...config, condition: e.target.value })}
+                  className={`w-full appearance-none py-4 px-5 rounded-2xl border-2 bg-white font-medium outline-none transition-all cursor-pointer ${
+                    isKids 
+                      ? 'border-slate-200 focus:border-yellow-400 text-slate-800' 
+                      : 'border-slate-200 focus:border-indigo-500 text-slate-800'
                   }`}
                 >
-                  {eye === 'both' ? 'Both (Fusion)' : eye.charAt(0).toUpperCase() + eye.slice(1)}
-                </button>
-              ))}
+                  <option value="amblyopia">Amblyopia (Lazy Eye)</option>
+                  <option value="strabismus">Strabismus (Eye Turn)</option>
+                  <option value="convergence">Convergence Insufficiency</option>
+                  <option value="tracking">Tracking Disorder</option>
+                  <option value="neglect">Spatial Neglect</option>
+                </select>
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                  <AlertCircle size={20} />
+                </div>
+              </div>
             </div>
-          </div>
 
-          <div>
-            <label className={`block text-sm font-semibold mb-2 text-gray-700`}>
-              Condition
-            </label>
-            <select
-              value={config.condition}
-              onChange={(e) => setConfig({ ...config, condition: e.target.value })}
-              className={`w-full py-3 px-4 rounded-xl border-2 focus:outline-none bg-white text-black cursor-pointer ${
-                isKids ? 'border-yellow-300 focus:border-yellow-500' : 'border-gray-200 focus:border-indigo-500'
+            {/* Difficulty Slider */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <label className={`block text-sm font-bold uppercase tracking-wider ${isKids ? 'text-yellow-700' : 'text-slate-500'}`}>
+                  {isKids ? '3. Challenge Level' : 'Difficulty Level'}
+                </label>
+                <span className={`px-3 py-1 rounded-full text-sm font-bold ${
+                  isKids ? 'bg-yellow-100 text-yellow-800' : 'bg-indigo-100 text-indigo-700'
+                }`}>
+                  Level {config.difficulty}
+                </span>
+              </div>
+              
+              <div className="relative h-12 flex items-center">
+                <input
+                  type="range"
+                  min="1"
+                  max="10"
+                  value={config.difficulty}
+                  onChange={(e) => setConfig({ ...config, difficulty: parseInt(e.target.value, 10) })}
+                  className={`w-full h-3 rounded-full appearance-none cursor-pointer focus:outline-none ${
+                    isKids ? 'bg-slate-200 accent-yellow-500' : 'bg-slate-200 accent-indigo-600'
+                  }`}
+                  style={{
+                    background: `linear-gradient(to right, ${isKids ? '#eab308' : '#4f46e5'} 0%, ${isKids ? '#eab308' : '#4f46e5'} ${(config.difficulty - 1) * 11.1}%, #e2e8f0 ${(config.difficulty - 1) * 11.1}%, #e2e8f0 100%)`
+                  }}
+                />
+              </div>
+              <div className="flex justify-between text-xs font-bold text-slate-400 uppercase tracking-wide">
+                <span>Beginner</span>
+                <span>Advanced</span>
+              </div>
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={saving}
+              className={`w-full py-4 rounded-xl font-bold text-lg shadow-lg transition-all transform hover:-translate-y-1 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed ${
+                isKids
+                  ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-white shadow-yellow-200 hover:shadow-yellow-300'
+                  : 'bg-slate-900 text-white shadow-slate-300 hover:shadow-slate-400'
               }`}
             >
-              <option value="amblyopia">Amblyopia (Lazy Eye)</option>
-              <option value="strabismus">Strabismus (Eye Turn)</option>
-              <option value="convergence">Convergence Insufficiency</option>
-              <option value="tracking">Tracking Disorder</option>
-              <option value="neglect">Spatial Neglect</option>
-            </select>
+              {saving ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Saving...
+                </span>
+              ) : (
+                isKids ? '🚀 Launch Mission' : 'Save Configuration'
+              )}
+            </button>
+          </form>
+
+          <div className="mt-6 text-center">
+            <Link
+              to="/"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-800 transition-colors"
+            >
+              <Home size={16} /> Cancel and Return Home
+            </Link>
           </div>
-
-          <div>
-            <label className={`block text-sm font-semibold mb-2 text-gray-700`}>
-              <Settings className="inline w-4 h-4 mr-1" />
-              {isKids ? 'Challenge level' : 'Difficulty'}: {config.difficulty}
-            </label>
-            <input
-              type="range"
-              min="1"
-              max="10"
-              value={config.difficulty}
-              onChange={(e) => setConfig({ ...config, difficulty: parseInt(e.target.value, 10) })}
-              className={`w-full h-2 rounded-lg accent-indigo-600 ${isKids ? 'accent-yellow-500' : ''}`}
-            />
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
-              <span>Easy</span>
-              <span>Hard</span>
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={saving}
-            className={`w-full py-4 rounded-xl font-black transition disabled:opacity-70 cursor-pointer ${
-              isKids
-                ? 'bg-yellow-400 hover:bg-yellow-500 text-yellow-900'
-                : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-            }`}
-          >
-            {isKids ? '🚀 Start Mission' : 'Save and continue'}
-          </button>
-        </form>
-
-        <Link
-          to="/"
-          className="mt-6 inline-flex items-center justify-center gap-2 w-full px-5 py-3 rounded-xl font-semibold text-gray-600 border-2 border-gray-200 hover:bg-gray-100 transition cursor-pointer"
-        >
-          <Home className="w-5 h-5" /> Back to Home
-        </Link>
+        </div>
       </motion.div>
     </div>
   );
