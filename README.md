@@ -180,10 +180,7 @@ frontend/src/
 ## Deployment
 
 <div align="center">
-  <a href="#" style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold;">
-    🚀 Deploy to Vercel
-  </a>
-  <a href="#" style="background-color: #10B981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; margin-left: 10px;">
+  <a href="https://visionfront.onrender.com" style="background-color: #10B981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; margin-left: 10px;">
     🐳 Deploy to Render
   </a>
 </div>
