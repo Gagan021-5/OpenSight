@@ -2,18 +2,15 @@ import express from "express";
 import Groq from "groq-sdk";
 import "dotenv/config";
 
-const router = express.Router();
+const chatroute = express.Router();
 
 // Initialize Groq
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-router.post("/", async (req, res) => {
+chatroute.post("/", async (req, res) => {
   const { message } = req.body;
   
-  // ============================================================
-  // 🛡️ SMART LOCAL KNOWLEDGE BASE
-  // (Instant answers for specific questions, works offline!)
-  // ============================================================
+ 
   
   const lowerMsg = message?.toLowerCase() || "";
   let fallbackReply = null; // We start as null to see if we match anything
@@ -88,4 +85,4 @@ router.post("/", async (req, res) => {
   }
 });
 
-export default router;
+export default chatroute;

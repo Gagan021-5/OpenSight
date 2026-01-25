@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import Navbar from "../components/Navbar.jsx";
+import Navbarr from "../components/Navbarr.jsx";
 import Chatbot from "../components/Chatbot.jsx";
 
 const FADE_UP_VARIANTS = {
@@ -46,7 +46,7 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-white font-sans selection:bg-indigo-100 selection:text-indigo-900 overflow-x-hidden">
-      <Navbar />
+      <Navbarr />
 
       {/* Decorative Background */}
       <div className="fixed inset-0 z-0 pointer-events-none">
