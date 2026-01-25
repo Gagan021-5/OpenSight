@@ -16,6 +16,7 @@ import { useTranslation } from "react-i18next";
 import { useGlobal } from "../context/GlobalContext.jsx";
 import { getGamesForCondition } from "../config/gameRegistry.js";
 import Chatbot from "../components/Chatbot.jsx";
+import useDailyStreak from "../hooks/useDailyStreak.js";
 
 // --- Configuration & Helpers ---
 
@@ -172,6 +173,7 @@ export default function Dashboard() {
   const { t } = useTranslation();
   const { userProfile, ageGroup } = useGlobal();
   const [games, setGames] = useState([]);
+  const streak = useDailyStreak();
   
   useEffect(() => {
     const condition = userProfile?.config?.condition;
@@ -266,7 +268,7 @@ export default function Dashboard() {
             <StatCard 
               icon={isKids ? Trophy : CalendarDays} 
               label={isKids ? "Streak" : "Adherence"} 
-              value={isKids ? "7 Days!" : "92%"}
+              value={isKids ? `${streak} Days!` : `${streak} Day Streak`}
               colorTheme="green"
               isKids={isKids}
             />
