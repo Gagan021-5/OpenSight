@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { MessageCircle, X, Send, Bot, Mic, MicOff, Sparkles, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import axios from "axios";
+import api from "../utils/api"; // 🟢 FIX: Import your configured API instance
 import { useGlobal } from "../context/GlobalContext.jsx";
 
 export default function Chatbot() {
@@ -79,7 +79,9 @@ export default function Chatbot() {
     setTyping(true);
 
     try {
-      const response = await axios.post("http://localhost:5000/api/chat", {
+      // 🟢 FIX: Use 'api' instead of 'axios' and remove localhost URL
+      // The 'api' instance already has the baseURL set to your Render backend
+      const response = await api.post("/chat", {
         message: userInput,
         context: { 
             ageGroup, 
