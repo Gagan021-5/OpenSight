@@ -1,12 +1,8 @@
 import axios from 'axios';
 
-let API_BASE;
-try {
-  API_BASE = import.meta.env.VITE_API_URL || 'https://visionback.onrender.com/api';
-} catch (e) {
-  // If import.meta is not supported (standard JS context), use the production URL
-  API_BASE = 'https://visionback.onrender.com/api';
-}
+// 🛑 FORCE PRODUCTION URL
+// We are intentionally ignoring import.meta.env to prevent localhost from sneaking in.
+const API_BASE = 'https://visionback.onrender.com/api';
 
 const api = axios.create({
   baseURL: API_BASE,
