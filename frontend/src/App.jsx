@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useGlobal } from './context/GlobalContext';
 import AppRoutes from './routes';
 import { Eye, Loader2 } from 'lucide-react';
-import api from './utils/api.js';// Ensure this points to your axios instance
+import api from './utils/api'; 
 
 function App() {
   const { loading: authLoading } = useGlobal();
@@ -13,11 +13,20 @@ function App() {
   useEffect(() => {
     const wakeUpBackend = async () => {
       try {
-        await api.get('/ping');
+        // FIX: The backend defines /ping at the root, but our API instance points to /api
+        // We override the baseURL for just this request to hit the root https://...onrender.com/ping
+        const rootUrl = api.defaults.baseURL?.replace('/api', '') || '';
+        
+        // Use standard fetch to avoid axios baseURL issues for this specific root check
+        // or axios with custom config. Let's use the axios instance but override baseURL.
+        await api.get('/ping', { 
+           baseURL: rootUrl 
+        });
+
         setIsBackendReady(true);
       } catch (error) {
-        console.log("Backend is still sleeping... retrying in 5s");
-        // Retry every 5 seconds until success
+        console.log(`Backend sleeping or path wrong... attempt ${retryCount + 1}`);
+        // Retry every 5 seconds
         setTimeout(() => setRetryCount(prev => prev + 1), 5000);
       }
     };
@@ -25,7 +34,7 @@ function App() {
     wakeUpBackend();
   }, [retryCount]);
 
-  // 🔹 Show the "Waking Up" screen if the backend hasn't responded yet
+  // 🔹 1. "Waking Up" Screen (Before Backend is ready)
   if (!isBackendReady) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-slate-950 text-slate-50">
@@ -53,15 +62,20 @@ function App() {
     );
   }
 
-  // 🔹 Show standard auth loading if backend is ready but user check isn't done
+  // 🔹 2. Auth Loading Screen (Backend ready, checking user token)
   if (authLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-950">
-         <Loader2 className="w-12 h-12 text-indigo-600 animate-spin" />
+      <div className="flex items-center justify-center min-h-screen bg-slate-50 text-slate-900 dark:text-slate-50 dark:bg-slate-950 transition-colors duration-300">
+        <div className="text-center">
+          <Eye className="w-16 h-16 text-indigo-600 dark:text-indigo-400 mx-auto mb-4 animate-pulse" />
+          <div className="w-16 h-16 border-4 border-indigo-600 dark:border-indigo-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-600 dark:text-slate-300 font-semibold">Verifying Credentials...</p>
+        </div>
       </div>
     );
   }
 
+  // 🔹 3. Main App
   return (
     <div className="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 transition-colors duration-300 min-h-screen">
       <AppRoutes />
