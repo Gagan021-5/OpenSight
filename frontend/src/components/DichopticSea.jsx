@@ -30,6 +30,7 @@ export default function DichopticSea({ onGameEnd }) {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   
+  // Logic & Timer Refs
   const rAf = useRef();
   const lastT = useRef(0);
   const scoreR = useRef(0);
@@ -38,6 +39,8 @@ export default function DichopticSea({ onGameEnd }) {
   const waveX = useRef(0);
   const laneCurR = useRef(1);
   const startTimeRef = useRef(null);
+  const totalPausedTimeRef = useRef(0);
+  const pauseStartRef = useRef(null);
 
   const getLaneCenter = (lane) => lane * LANE_W + LANE_W / 2 - BOAT_W / 2;
 
@@ -63,13 +66,24 @@ export default function DichopticSea({ onGameEnd }) {
     obsR.current = [];
     laneCurR.current = 1;
     waveX.current = 0;
-    lastT.current = performance.now();
+    totalPausedTimeRef.current = 0;
     startTimeRef.current = Date.now();
     setScore(0);
     setDisplaySpeed(1);
     setShowSummary(false);
     setGameState('PLAYING');
-    rAf.current = requestAnimationFrame(update);
+  };
+
+  const moveLeft = () => { if (laneCurR.current > 0) laneCurR.current--; };
+  const moveRight = () => { if (laneCurR.current < LANES - 1) laneCurR.current++; };
+
+  const handleTouch = (e) => {
+    if (gameState !== 'PLAYING') return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX || (e.touches && e.touches[0].clientX);
+    const relativeX = x - rect.left;
+    if (relativeX < rect.width / 2) moveLeft();
+    else moveRight();
   };
 
   const update = (time) => {
@@ -107,16 +121,17 @@ export default function DichopticSea({ onGameEnd }) {
     for (const o of obsR.current) {
       if (pX < o.x + 10 + (OBS_W - 20) && pX + pW > o.x + 10 && 
           pY < o.y + 10 + (OBS_H - 20) && pY + pH > o.y + 10) {
-        // Calculate session duration
-        const duration = startTimeRef.current ? Math.floor((Date.now() - startTimeRef.current) / 1000) : 0;
         
-        // Save game session
-        saveGameSession('dichoptic-sea', scoreR.current, duration);
-        
+        const finalDuration = startTimeRef.current 
+          ? Math.floor((Date.now() - startTimeRef.current - totalPausedTimeRef.current) / 1000) 
+          : 0;
+
+        saveGameSession('dichoptic-sea', scoreR.current, finalDuration);
         setGameState('GAMEOVER');
         setShowSummary(true);
         if (onGameEnd && startTimeRef.current) 
-          onGameEnd(scoreR.current, (Date.now() - startTimeRef.current) / 1000);
+          onGameEnd(scoreR.current, finalDuration);
+        
         cancelAnimationFrame(rAf.current);
         return;
       }
@@ -162,16 +177,29 @@ export default function DichopticSea({ onGameEnd }) {
     });
   };
 
+  const handlePause = () => {
+    setGameState(p => {
+      if (p === 'PLAYING') {
+        pauseStartRef.current = Date.now();
+        return 'PAUSED';
+      }
+      if (p === 'PAUSED') {
+        if (pauseStartRef.current) {
+          totalPausedTimeRef.current += (Date.now() - pauseStartRef.current);
+        }
+        lastT.current = performance.now();
+        return 'PLAYING';
+      }
+      return p;
+    });
+  };
+
   useEffect(() => {
     const h = (e) => {
-      if (e.code === 'Space') {
-        e.preventDefault();
-        setGameState(p => p === 'PLAYING' ? 'PAUSED' : p === 'PAUSED' ? 'PLAYING' : p);
-        if (gameState === 'PAUSED') lastT.current = performance.now();
-      }
+      if (e.code === 'Space') { e.preventDefault(); handlePause(); }
       if (gameState !== 'PLAYING') return;
-      if (e.key === 'ArrowLeft' && laneCurR.current > 0) laneCurR.current--;
-      if (e.key === 'ArrowRight' && laneCurR.current < LANES - 1) laneCurR.current++;
+      if (e.key === 'ArrowLeft') moveLeft();
+      if (e.key === 'ArrowRight') moveRight();
     };
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
@@ -196,12 +224,13 @@ export default function DichopticSea({ onGameEnd }) {
         </div>
       )}
 
-      {/* RESPONSIVE LAYOUT WRAPPER: Flex Column on Mobile, Row on Large Screens */}
       <div className="flex flex-col lg:flex-row gap-8 items-start justify-center w-full max-w-6xl">
-        
-        {/* Game Area */}
-        <div ref={containerRef} className={`relative w-full lg:flex-1 bg-neutral-950 flex items-center justify-center transition-all duration-300 ${isFullScreen ? 'fixed inset-0 z-50' : 'border-4 border-neutral-800 rounded-lg shadow-2xl aspect-[2/3] lg:aspect-auto lg:h-[600px]'}`}>
-          <button onClick={toggleFullScreen} className="absolute top-4 right-4 p-2 bg-gray-800/50 hover:bg-gray-700 rounded-full text-white z-50 transition">
+        <div 
+          ref={containerRef} 
+          onClick={handleTouch}
+          className={`relative w-full lg:flex-1 bg-neutral-950 flex items-center justify-center transition-all duration-300 ${isFullScreen ? 'fixed inset-0 z-50' : 'border-4 border-neutral-800 rounded-lg shadow-2xl aspect-[2/3] lg:aspect-auto lg:h-[600px] lg:w-auto cursor-pointer'}`}
+        >
+          <button onClick={(e) => { e.stopPropagation(); toggleFullScreen(); }} className="absolute top-4 right-4 p-2 bg-gray-800/50 hover:bg-gray-700 rounded-full text-white z-50 transition">
             {isFullScreen ? <Minimize size={24} /> : <Maximize size={24} />}
           </button>
           
@@ -213,19 +242,21 @@ export default function DichopticSea({ onGameEnd }) {
             style={{ backgroundColor: '#000' }} 
           />
           
-          {gameState === 'PAUSED' && (
+          {gameState !== 'PLAYING' && !showSummary && (
             <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-40 backdrop-blur-sm">
-              <div className="text-center mb-6">
-                <Pause className="mx-auto w-16 h-16 mb-2 text-blue-500" />
-                <h2 className="text-4xl font-black text-white">PAUSED</h2>
-              </div>
-              <button onClick={() => setGameState('PLAYING')} className="flex items-center gap-2 px-8 py-4 text-white font-bold rounded-full text-xl shadow-lg transition hover:scale-105" style={{ backgroundColor: getSolidColor() }}><Play fill="currentColor" /> RESUME</button>
+              {gameState === 'PAUSED' && <div className="text-center mb-6"><Pause className="mx-auto w-16 h-16 mb-2 text-blue-500" /><h2 className="text-4xl font-black text-white">PAUSED</h2></div>}
+              <button 
+                onClick={(e) => { e.stopPropagation(); gameState === 'START' ? startGame() : setGameState('PLAYING'); }} 
+                className="flex items-center gap-2 px-8 py-4 text-white font-bold rounded-full text-xl shadow-lg transition hover:scale-105" 
+                style={{ backgroundColor: getSolidColor() }}
+              >
+                <Play fill="currentColor" /> {gameState === 'START' ? 'SET SAIL' : 'CONTINUE'}
+              </button>
             </div>
           )}
-          <div className="absolute top-4 left-4 text-white font-mono font-bold text-xl drop-shadow-md z-30">SCORE: {score}</div>
+          <div className="absolute top-4 left-4 text-white font-mono font-bold text-xl drop-shadow-md z-30 pointer-events-none">SCORE: {score}</div>
         </div>
 
-        {/* Sidebar - Stacks below on mobile */}
         {!isFullScreen && (
           <div className="w-full lg:w-80 bg-neutral-800 p-6 rounded-xl border border-neutral-700 h-auto lg:h-[600px] flex flex-col">
             <div className="flex items-center gap-2 mb-6 text-gray-400 uppercase text-xs font-bold tracking-widest"><Settings size={14} /> Therapy Config</div>
@@ -245,7 +276,6 @@ export default function DichopticSea({ onGameEnd }) {
                 </p>
               </div>
             </div>
-            {/* Mobile Controls Hint */}
             <div className="lg:hidden text-center mt-6 p-4 bg-neutral-700/50 rounded-lg">
                <p className="text-sm font-bold text-white">Tap Left/Right side of screen to move</p>
             </div>
@@ -254,14 +284,13 @@ export default function DichopticSea({ onGameEnd }) {
         )}
       </div>
 
-      {/* Game Summary Overlay */}
       <GameSummary
         isOpen={showSummary}
         onClose={() => setShowSummary(false)}
         gameId="dichoptic-sea"
-        gameTitle="RED SEA"
+        gameTitle="SEA VOYAGE"
         score={score}
-        duration={startTimeRef.current ? Math.floor((Date.now() - startTimeRef.current) / 1000) : 0}
+        duration={startTimeRef.current ? Math.floor((Date.now() - startTimeRef.current - totalPausedTimeRef.current) / 1000) : 0}
         onRestart={startGame}
         onBackToDashboard={() => window.location.href = '/dashboard'}
       />
