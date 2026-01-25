@@ -3,9 +3,12 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, Loader2, ArrowRight, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useGlobal } from '../context/GlobalContext.jsx';
+// 🟢 FIX: Import authAPI to hit the Render backend directly
+import { authAPI, setAuthToken } from '../utils/api'; 
 
 export default function SignInPage() {
-  const { login } = useGlobal();
+  // 🟢 FIX: Get checkAuth instead of login so we can update state after success
+  const { checkAuth } = useGlobal(); 
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -16,15 +19,29 @@ export default function SignInPage() {
     e.preventDefault();
     setLoading(true);
     setError('');
+    
     try {
       if (!email || !password) {
         setError('Please fill in all fields');
+        setLoading(false);
         return;
       }
-      await login(email.trim(), password);
+
+      // 🟢 FIX: Use authAPI.login (uses https://visionback.onrender.com)
+      // instead of the potentially broken 'login' from GlobalContext
+      const { data } = await authAPI.login(email.trim(), password);
+
+      // 🟢 FIX: Manually handle the success flow
+      localStorage.setItem('opensight_token', data.token);
+      setAuthToken(data.token);
+      
+      // Update the global state so the app knows we are logged in
+      await checkAuth();
+
       navigate('/dashboard', { replace: true });
     } catch (err) {
-      setError(err.response?.data?.error || 'Invalid email or password');
+      console.error("Login Error:", err);
+      setError(err.response?.data?.message || 'Invalid email or password');
     } finally {
       setLoading(false);
     }
@@ -136,7 +153,6 @@ export default function SignInPage() {
               </div>
             </div>
 
-            {/* Forgot Password Link Removed */}
             <div className="flex items-center">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />

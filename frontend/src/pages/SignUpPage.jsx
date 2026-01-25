@@ -3,9 +3,12 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, User, Loader2, ArrowRight, ArrowLeft, Baby, UserCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useGlobal } from '../context/GlobalContext.jsx';
+// 🟢 FIX: Import authAPI to hit the Render backend directly
+import { authAPI, setAuthToken } from '../utils/api'; 
 
 export default function SignUpPage() {
-  const { register } = useGlobal();
+  // 🟢 FIX: Get checkAuth to update state after registration
+  const { checkAuth } = useGlobal();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
@@ -33,13 +36,31 @@ export default function SignUpPage() {
         throw new Error('Password must be at least 6 characters');
       }
 
-      await register({
+      const payload = {
         ...formData,
         email: formData.email.trim(),
         name: formData.name.trim()
-      });
-      navigate('/dashboard', { replace: true });
+      };
+
+      // 🟢 FIX: Use authAPI.register directly
+      const { data } = await authAPI.register(payload);
+
+      // 🟢 FIX: Manually handle the success flow
+      if (data.token) {
+        localStorage.setItem('opensight_token', data.token);
+        setAuthToken(data.token);
+        
+        // Update global state
+        await checkAuth();
+        
+        navigate('/dashboard', { replace: true });
+      } else {
+        // Fallback if no token returned immediately (rare, but safe)
+        navigate('/sign-in');
+      }
+
     } catch (err) {
+      console.error("Registration Error:", err);
       setError(err.message || err.response?.data?.error || 'Registration failed');
     } finally {
       setLoading(false);

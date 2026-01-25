@@ -11,16 +11,13 @@ export const useGlobal = () => {
 };
 
 const TOKEN_KEY = 'opensight_token';
-const VISUAL_MODE_KEY = 'opensight_visual_mode';
 
 export const GlobalProvider = ({ children }) => {
   const [userProfile, setUserProfile] = useState(() => {
-    // Check localStorage IMMEDIATELY during initialization
     const savedToken = localStorage.getItem(TOKEN_KEY);
     return savedToken ? { token: savedToken } : null;
   });
   const [loading, setLoading] = useState(() => {
-    // Only loading if we have a token to verify
     const savedToken = localStorage.getItem(TOKEN_KEY);
     return !!savedToken;
   });
@@ -45,10 +42,9 @@ export const GlobalProvider = ({ children }) => {
       const { data } = await userAPI.getProfile();
       setUserProfile(data.user);
       setTheme(data.user.ageGroup || 'adult');
-    } catch {
-      // If API fails, keep the token-based user state for navigation
-      // Don't clear token on network errors
-      console.warn('Failed to load profile, keeping token for navigation');
+    } catch (e) {
+      console.warn('Failed to load profile');
+      // Optional: Clear token if invalid, but usually better to keep for retry
     } finally {
       setLoading(false);
     }
@@ -58,13 +54,11 @@ export const GlobalProvider = ({ children }) => {
     loadProfile();
   }, [loadProfile]);
 
+  // Wrappers to expose the API through context if needed
   const register = async (formData) => {
     setLoading(true);
     try {
       const { data } = await authAPI.register(formData);
-      if (!data?.token || !data?.user) {
-        throw new Error('Registration response missing token or user');
-      }
       loginWithToken(data.token, data.user);
       return data;
     } catch (error) {
@@ -78,9 +72,6 @@ export const GlobalProvider = ({ children }) => {
     setLoading(true);
     try {
       const { data } = await authAPI.login(email, password);
-      if (!data?.token || !data?.user) {
-        throw new Error('Login response missing token or user');
-      }
       loginWithToken(data.token, data.user);
       return data;
     } catch (error) {
@@ -95,32 +86,26 @@ export const GlobalProvider = ({ children }) => {
     setAuthToken(null);
     setUserProfile(null);
     setTheme('adult');
+    // Force reload to clear any memory states or redirect
+    window.location.href = '/'; 
   };
 
   const updateConfig = async (config) => {
     try {
-      // 1. CRITICAL: Update Local State immediately (Optimistic Update)
       setUserProfile((prevUser) => ({
         ...prevUser,
         config: { ...prevUser.config, ...config }
       }));
-
-      // 2. Call Backend to persist changes
       const { data } = await userAPI.updateConfig(config);
-      
-      // 3. Optional: Sync with server response if needed (for validation/defaults)
       if (data.config) {
         setUserProfile((prevUser) => ({
           ...prevUser,
           config: { ...prevUser.config, ...data.config }
         }));
       }
-      
       return data;
     } catch (error) {
-      console.error('Config update failed, reverting optimistic update:', error);
-      // Revert optimistic update on error
-      await loadProfile(); // Reload from server to get accurate state
+      await loadProfile();
       throw error;
     }
   };
@@ -149,10 +134,10 @@ export const GlobalProvider = ({ children }) => {
         difficulty: userProfile?.config?.difficulty ?? 5,
         register,
         login,
-        loginWithToken,
         logout,
         updateConfig,
         refreshProfile: loadProfile,
+        checkAuth: loadProfile, // 🟢 FIX: Added this alias so SignInPage works!
         toggleLanguage,
         submitScore,
       }}
