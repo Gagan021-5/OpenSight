@@ -180,8 +180,8 @@ frontend/src/
 ## Deployment
 
 <div align="center">
-  <a href="https://visionfront.onrender.com" style="background-color: #10B981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; margin-left: 10px;">
-    🐳 Deploy to Render
+  <a href="https://visionfront.onrender.com">
+    <img src="https://img.shields.io/badge/Deployed-Render-10B981?style=for-the-badge&logo=render&logoColor=white" alt="Deployed to Render">
   </a>
 </div>
 
