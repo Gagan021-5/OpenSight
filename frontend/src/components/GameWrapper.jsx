@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect, cloneElement, Children } from 'react';
 import { Maximize, Minimize } from 'lucide-react';
-import { useGlobal } from '../context/GlobalContext';
+import { useGlobal } from '../context/GlobalContext.jsx';
 
 /**
  * Wraps every game: fullscreen toggle, game-over detection, auto-save score.

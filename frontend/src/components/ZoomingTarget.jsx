@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { Crosshair, Play, Pause, AlertCircle } from 'lucide-react';
-import useTherapyColors from '../hooks/useTherapyColors';
-import { useGlobal } from '../context/GlobalContext';
+import { Crosshair, Play, Pause, AlertCircle, Settings } from 'lucide-react';
+import useTherapyColors from '../hooks/useTherapyColors.js';
+import { useGlobal } from '../context/GlobalContext.jsx';
 
 /**
  * Convergence – "Zooming Target"
@@ -22,6 +22,7 @@ export default function ZoomingTarget({ onGameEnd, isFullScreen }) {
   const [score, setScore] = useState(0);
   const [disp, setDisp] = useState(0); // horizontal disparity: negative = crossed, positive = uncrossed
   const [fused, setFused] = useState(false);
+  const [fusionTime, setFusionTime] = useState(0); // Current fusion time in milliseconds
   const fuseStart = useRef(null);
   const startTimeRef = useRef(null);
   const canvasRef = useRef(null);
@@ -30,6 +31,7 @@ export default function ZoomingTarget({ onGameEnd, isFullScreen }) {
     setScore(0);
     setDisp(0);
     setFused(false);
+    setFusionTime(0); // Reset fusion time
     fuseStart.current = null;
     startTimeRef.current = Date.now();
     setGameState('PLAYING');
@@ -42,17 +44,23 @@ export default function ZoomingTarget({ onGameEnd, isFullScreen }) {
 
   // Red at center - disp/2, Blue at center + disp/2. When |disp| < FUSION_THRESH → fused (purple)
   useEffect(() => {
-    if (gameState !== 'PLAYING') return;
+    if (gameState !== 'PLAYING') {
+      setFusionTime(0); // Reset fusion time when not playing
+      return;
+    }
     const inFusion = Math.abs(disp) < FUSION_THRESH;
     if (inFusion) {
       if (!fuseStart.current) fuseStart.current = Date.now();
-      const held = (Date.now() - fuseStart.current) / 1000;
+      const currentTime = Date.now() - fuseStart.current;
+      setFusionTime(currentTime); // Update fusion time in milliseconds
+      const held = currentTime / 1000;
       if (held >= 1) {
         setScore((s) => s + 10);
-        fuseStart.current = Date.now();
+        fuseStart.current = Date.now(); // Reset timer for next point
       }
     } else {
       fuseStart.current = null;
+      setFusionTime(0); // Reset fusion time when not fused
     }
     setFused(inFusion);
   }, [gameState, disp]);
@@ -100,7 +108,7 @@ export default function ZoomingTarget({ onGameEnd, isFullScreen }) {
   if (isFullScreen) {
     return (
       <div className="h-full w-full flex items-center justify-center relative">
-        <canvas ref={canvasRef} width={W} height={H} className="max-h-full max-w-full" style={{ objectFit: 'contain' }} />
+        <canvas ref={canvasRef} width={W} height={H} className="max-h-full max-w-full" style={{ objectFit: 'contain', backgroundColor: '#121212' }} />
         <div className="absolute top-4 left-4 font-mono text-white drop-shadow-lg z-20 bg-slate-900/60 backdrop-blur-md border border-white/10 px-3 py-2 rounded-xl">Score: {score}</div>
         {gameState !== 'PLAYING' && (
           <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-20">
@@ -118,7 +126,7 @@ export default function ZoomingTarget({ onGameEnd, isFullScreen }) {
       {/* Layer 1: Game Canvas - Full Screen Background */}
       <div className="absolute inset-0 flex items-center justify-center p-4">
         <div className="relative rounded-xl border border-white/10 overflow-hidden bg-slate-950 w-full h-full max-w-5xl max-h-[85vh]">
-          <canvas ref={canvasRef} width={W} height={H} className="block w-full h-full object-contain" style={{ aspectRatio: '16/9' }} />
+          <canvas ref={canvasRef} width={W} height={H} className="block w-full h-full object-contain" style={{ aspectRatio: '16/9', backgroundColor: '#121212' }} />
           <div className="absolute top-3 left-3 font-mono font-bold text-lg text-white bg-slate-900/60 backdrop-blur-md border border-white/10 px-3 py-2 rounded-xl">Score: {score}</div>
           {gameState !== 'PLAYING' && (
             <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-20">

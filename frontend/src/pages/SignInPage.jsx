@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Eye, Mail, Lock, Loader2, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useGlobal } from '../context/GlobalContext';
+import { useGlobal } from '../context/GlobalContext.jsx';
 
 export default function SignInPage() {
   const { login } = useGlobal();

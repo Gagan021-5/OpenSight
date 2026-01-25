@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { MessageCircle, X, Send, Bot, Mic, MicOff } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
-import { useGlobal } from "../context/GlobalContext";
+import { useGlobal } from "../context/GlobalContext.jsx";
 
 export default function Chatbot() {
   const [open, setOpen] = useState(false);

@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { authAPI, userAPI, gameAPI, setAuthToken } from '../utils/api';
-import i18n from '../i18n';
+import { authAPI, userAPI, gameAPI, setAuthToken } from '../utils/api.js';
+import i18n from '../i18n.js';
 
 const GlobalContext = createContext();
 
@@ -99,10 +99,29 @@ export const GlobalProvider = ({ children }) => {
 
   const updateConfig = async (config) => {
     try {
+      // 1. CRITICAL: Update Local State immediately (Optimistic Update)
+      setUserProfile((prevUser) => ({
+        ...prevUser,
+        config: { ...prevUser.config, ...config }
+      }));
+
+      // 2. Call Backend to persist changes
       const { data } = await userAPI.updateConfig(config);
-      setUserProfile((prev) => ({ ...prev, config: data.config }));
+      
+      // 3. Optional: Sync with server response if needed (for validation/defaults)
+      if (data.config) {
+        setUserProfile((prevUser) => ({
+          ...prevUser,
+          config: { ...prevUser.config, ...data.config }
+        }));
+      }
+      
+      return data;
     } catch (error) {
-      console.error('Failed to update config:', error);
+      console.error('Config update failed, reverting optimistic update:', error);
+      // Revert optimistic update on error
+      await loadProfile(); // Reload from server to get accurate state
+      throw error;
     }
   };
 

@@ -10,8 +10,8 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import Navbar from "../components/Navbar";
-import Chatbot from "../components/Chatbot";
+import Navbar from "../components/Navbar.jsx";
+import Chatbot from "../components/Chatbot.jsx";
 
 export default function LandingPage() {
   const { t, i18n } = useTranslation();

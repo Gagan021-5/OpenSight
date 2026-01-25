@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { User, Mail, Eye, Target, Settings, Home } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useGlobal } from '../context/GlobalContext';
+import { useGlobal } from '../context/GlobalContext.jsx';
 
 export default function ProfilePage() {
   const { userProfile, refreshProfile, weakEye, condition, ageGroup } = useGlobal();

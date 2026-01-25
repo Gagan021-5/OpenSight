@@ -14,9 +14,9 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { useGlobal } from "../context/GlobalContext";
-import { getGamesForCondition } from "../config/gameRegistry";
-import Chatbot from "../components/Chatbot";
+import { useGlobal } from "../context/GlobalContext.jsx";
+import { getGamesForCondition } from "../config/gameRegistry.js";
+import Chatbot from "../components/Chatbot.jsx";
 
 // Icon map for dynamic rendering
 const ICON_MAP = {

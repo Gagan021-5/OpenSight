@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Eye, Settings, Play, Pause, AlertCircle } from 'lucide-react';
-import useTherapyColors from '../hooks/useTherapyColors';
-import { useGlobal } from '../context/GlobalContext';
+import useTherapyColors from '../hooks/useTherapyColors.js';
+import { useGlobal } from '../context/GlobalContext.jsx';
 
 const CANVAS_SIZE = 400;
 const SCALE = 20;
@@ -124,7 +124,7 @@ export default function DichopticSnake({ onGameEnd, isFullScreen }) {
   if (isFullScreen) {
     return (
       <div className="h-full w-full flex items-center justify-center relative">
-        <canvas ref={canvasRef} width={CANVAS_SIZE} height={CANVAS_SIZE} className="max-h-full max-w-full" style={{ objectFit: 'contain' }} />
+        <canvas ref={canvasRef} width={CANVAS_SIZE} height={CANVAS_SIZE} className="max-h-full max-w-full" style={{ objectFit: 'contain', backgroundColor: '#121212' }} />
         {gameState !== 'PLAYING' && overlay}
       </div>
     );
@@ -140,7 +140,7 @@ export default function DichopticSnake({ onGameEnd, isFullScreen }) {
             width={CANVAS_SIZE} 
             height={CANVAS_SIZE} 
             className="max-w-full max-h-full shadow-2xl rounded-xl object-contain"
-            style={{ aspectRatio: '1/1' }}
+            style={{ aspectRatio: '1/1', backgroundColor: '#121212' }}
           />
           {gameState !== 'PLAYING' && overlay}
         </div>

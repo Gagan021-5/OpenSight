@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useGlobal } from '../context/GlobalContext';
+import { useGlobal } from '../context/GlobalContext.jsx';
 import { Eye, Target, Settings, Home } from 'lucide-react';
 import { motion } from 'framer-motion';
 

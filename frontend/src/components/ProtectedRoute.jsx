@@ -1,5 +1,5 @@
 import { Navigate, useLocation } from 'react-router-dom';
-import { useGlobal } from '../context/GlobalContext';
+import { useGlobal } from '../context/GlobalContext.jsx';
 
 export default function ProtectedRoute({ children }) {
   const { userProfile, loading } = useGlobal();

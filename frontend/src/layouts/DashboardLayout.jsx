@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { NavLink, useNavigate, Outlet } from 'react-router-dom';
 import { LayoutDashboard, User, Settings, LogOut, Moon, Sun, Languages, Menu, X } from 'lucide-react';
-import { useGlobal } from '../context/GlobalContext';
-import Chatbot from '../components/Chatbot';
+import { useGlobal } from '../context/GlobalContext.jsx';
+import Chatbot from '../components/Chatbot.jsx';
 import { useTranslation } from 'react-i18next';
 
 const nav = [

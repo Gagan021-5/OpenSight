@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Target, Play, Pause, AlertCircle } from 'lucide-react';
-import useTherapyColors from '../hooks/useTherapyColors';
-import { useGlobal } from '../context/GlobalContext';
+import useTherapyColors from '../hooks/useTherapyColors.js';
+import { useGlobal } from '../context/GlobalContext.jsx';
 
 /**
  * Tracking – "Whack-a-Target"
@@ -111,7 +111,7 @@ export default function WhackATarget({ onGameEnd, isFullScreen }) {
       {/* Layer 1: Game Canvas - Full Screen Background */}
       <div className="absolute inset-0 flex items-center justify-center p-4">
         <div className="relative rounded-xl border border-white/10 overflow-hidden bg-slate-950 w-full h-full max-w-5xl max-h-[85vh]">
-          <canvas ref={canvasRef} width={W} height={H} className="block w-full h-full cursor-crosshair object-contain" style={{ aspectRatio: '16/9' }} />
+          <canvas ref={canvasRef} width={W} height={H} className="block w-full h-full cursor-crosshair object-contain" style={{ aspectRatio: '16/9', backgroundColor: '#121212' }} />
           <div className="absolute top-3 left-3 font-mono font-bold text-lg text-white bg-slate-900/60 backdrop-blur-md border border-white/10 px-3 py-2 rounded-xl">Score: {score}</div>
           {gameState !== 'PLAYING' && (
             <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-20">
