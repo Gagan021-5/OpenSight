@@ -113,6 +113,7 @@ The platform supports two distinct UX modes tailored to patient adherence and ne
 * **Clinical Trials**: Partnering with optometrists to validate game-based acuity improvements.
 * **Worth 4-Dot Diagnostic**: Integrating a digital version of the clinical suppression test.
 * **Mobile PWA**: Enabling offline therapy sessions and a dedicated mobile experience.
+* **💎 Web3 Incentivization Layer ($SIGHT)** Implementing an ERC-20 token reward system on the Polygon network. Patients will earn "Sight Credits" for maintaining daily therapy streaks, which can be redeemed for premium themes or donated to fund vision care for others. This "Play-to-Heal" model directly addresses the challenge of patient compliance.
 
 ---
 
