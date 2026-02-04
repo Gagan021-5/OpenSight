@@ -126,6 +126,15 @@ The platform supports two distinct UX modes tailored to patient adherence and ne
 
 ---
 
+## 🎯 Alignment with UN Sustainable Development Goals
+
+OpenSight is built to directly address global development targets:
+
+* **❤️ SDG 3: Good Health & Well-being** * *Target 3.8:* Achieving universal health coverage by providing affordable, quality vision care.
+* **⚖️ SDG 10: Reduced Inequalities** * By lowering the cost of therapy by **99%**, we ensure that good vision is not a privilege for the wealthy.
+
+---
+
 ## Quick Start
 
 ### Backend Setup
