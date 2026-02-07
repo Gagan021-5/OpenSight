@@ -1,162 +1,99 @@
-#!/usr/bin/env python3
-"""
-Red/Blue Glasses Detection Script
-Detects if user is wearing red/blue glasses by analyzing color channel intensity over eyes.
-"""
-
 import sys
-import json
 import cv2
 import numpy as np
 import base64
+import json
+import mediapipe as mp
 
-def detect_glasses(base64_image):
-    """
-    Detect if user is wearing red/blue glasses by analyzing color channels.
-    
-    Args:
-        base64_image: Base64 encoded image string
-    
-    Returns:
-        dict: {"wearingGlasses": bool, "confidence": float, "details": str}
-    """
+def process_image():
     try:
-        # Decode base64 image
-        if base64_image.startswith('data:image'):
-            # Remove data URL prefix
-            header, encoded = base64_image.split(',', 1)
-            image_data = base64.b64decode(encoded)
-            nparr = np.frombuffer(image_data, np.uint8)
-            img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        else:
-            # Direct base64 string
-            image_data = base64.b64decode(base64_image)
-            nparr = np.frombuffer(image_data, np.uint8)
-            img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        # 1. READ FROM STDIN (Solves the "Argument too long" error)
+        # We read the entire input stream
+        input_data = sys.stdin.read().strip()
         
-        if img is None:
-            return {"wearingGlasses": False, "confidence": 0.0, "details": "Failed to load image"}
-        
-        # Convert to RGB (OpenCV uses BGR)
-        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        
-        # Load face and eye cascade classifiers
-        face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-        eye_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_eye.xml')
-        
-        # Detect faces
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        faces = face_cascade.detectMultiScale(gray, 1.1, 4)
-        
-        if len(faces) == 0:
-            return {"wearingGlasses": False, "confidence": 0.0, "details": "No face detected"}
-        
-        # Use the largest face found
-        largest_face = max(faces, key=lambda f: f[2] * f[3])
-        (x, y, w, h) = largest_face
-        
-        # Extract face region
-        face_roi = img_rgb[y:y+h, x:x+w]
-        face_gray = gray[y:y+h, x:x+w]
-        
-        # Detect eyes in face
-        eyes = eye_cascade.detectMultiScale(face_gray)
-        
-        if len(eyes) < 2:
-            return {"wearingGlasses": False, "confidence": 0.0, "details": "Less than 2 eyes detected"}
-        
-        # Sort eyes by x-coordinate (left eye first)
-        eyes = sorted(eyes, key=lambda e: e[0])
-        
-        # Take the two largest eyes (in case of false detections)
-        if len(eyes) > 2:
-            eyes = sorted(eyes, key=lambda e: e[2] * e[3], reverse=True)[:2]
-            eyes = sorted(eyes, key=lambda e: e[0])  # Re-sort by position
-        
-        # Extract eye regions
-        left_eye = eyes[0]
-        right_eye = eyes[1]
-        
-        left_eye_roi = face_roi[left_eye[1]:left_eye[1]+left_eye[3], left_eye[0]:left_eye[0]+left_eye[2]]
-        right_eye_roi = face_roi[right_eye[1]:right_eye[1]+right_eye[3], right_eye[0]:right_eye[0]+right_eye[2]]
-        
-        # Calculate average color intensities for each eye
-        def analyze_eye_color(eye_roi):
-            if eye_roi.size == 0:
-                return (0, 0, 0)
-            
-            # Calculate mean color values, avoiding outliers
-            # Use median instead of mean to be more robust to lighting
-            median_color = np.median(eye_roi.reshape(-1, 3), axis=0)
-            return tuple(median_color.astype(int))
-        
-        left_color = analyze_eye_color(left_eye_roi)
-        right_color = analyze_eye_color(right_eye_roi)
-        
-        # Extract RGB values
-        left_r, left_g, left_b = left_color
-        right_r, right_g, right_b = right_color
-        
-        # Calculate color dominance for each eye
-        # Red dominance: how much more red than green and blue
-        # Blue dominance: how much more blue than green and red
-        
-        left_red_dominance = left_r - (left_g + left_b) / 2
-        left_blue_dominance = left_b - (left_g + left_r) / 2
-        
-        right_red_dominance = right_r - (right_g + right_b) / 2
-        right_blue_dominance = right_b - (right_g + right_r) / 2
-        
-        # Detection logic:
-        # Case 1: Left eye has red filter, right eye has blue filter
-        case1_confidence = 0
-        if left_red_dominance > 10 and right_blue_dominance > 10:
-            case1_confidence = min(left_red_dominance, right_blue_dominance) / 50.0
-        
-        # Case 2: Left eye has blue filter, right eye has red filter
-        case2_confidence = 0
-        if left_blue_dominance > 10 and right_red_dominance > 10:
-            case2_confidence = min(left_blue_dominance, right_red_dominance) / 50.0
-        
-        # Take the maximum confidence from both cases
-        max_confidence = max(case1_confidence, case2_confidence)
-        
-        # Normalize confidence to 0-1 range
-        confidence = min(max_confidence, 1.0)
-        
-        # Determine if wearing glasses (threshold can be adjusted)
-        is_wearing_glasses = confidence > 0.3
-        
-        # Create detailed report
-        details = f"Left eye RGB: {left_color}, Right eye RGB: {right_color}"
-        details += f" | Left red dominance: {left_red_dominance:.1f}, Left blue dominance: {left_blue_dominance:.1f}"
-        details += f" | Right red dominance: {right_red_dominance:.1f}, Right blue dominance: {right_blue_dominance:.1f}"
-        
-        return {
-            "wearingGlasses": is_wearing_glasses,
-            "confidence": confidence,
-            "details": details,
-            "leftEyeColor": left_color,
-            "rightEyeColor": right_color
-        }
-        
-    except Exception as e:
-        return {
-            "wearingGlasses": False, 
-            "confidence": 0.0, 
-            "details": f"Error: {str(e)}"
-        }
+        if not input_data:
+            print(json.dumps({"wearingGlasses": False, "error": "No input data"}))
+            return
 
-def main():
-    if len(sys.argv) != 2:
+        # Clean base64 header if present
+        if "," in input_data:
+            input_data = input_data.split(",")[1]
+
+        # Decode Image
+        img_bytes = base64.b64decode(input_data)
+        nparr = np.frombuffer(img_bytes, np.uint8)
+        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+        if img is None:
+            print(json.dumps({"wearingGlasses": False, "error": "Image decode failed"}))
+            return
+
+        # 2. MEDIAPIPE SETUP (Better than Haar Cascades)
+        mp_face_mesh = mp.solutions.face_mesh
+        face_mesh = mp_face_mesh.FaceMesh(
+            static_image_mode=True,
+            max_num_faces=1,
+            refine_landmarks=True,
+            min_detection_confidence=0.5
+        )
+
+        rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        results = face_mesh.process(rgb_img)
+
+        if not results.multi_face_landmarks:
+            print(json.dumps({"wearingGlasses": False, "reason": "No face detected"}))
+            return
+
+        # 3. GET EYE COORDINATES
+        landmarks = results.multi_face_landmarks[0].landmark
+        h, w, _ = img.shape
+
+        def get_avg_color(indices):
+            # Extract pixels for the eye region
+            points = [(int(landmarks[i].x * w), int(landmarks[i].y * h)) for i in indices]
+            x_coords = [p[0] for p in points]
+            y_coords = [p[1] for p in points]
+            
+            min_x, max_x = max(0, min(x_coords)), min(w, max(x_coords))
+            min_y, max_y = max(0, min(y_coords)), min(h, max(y_coords))
+            
+            roi = img[min_y:max_y, min_x:max_x]
+            if roi.size == 0: return (0, 0, 0)
+            
+            return np.mean(roi, axis=(0, 1)) # Returns B, G, R
+
+        # MediaPipe Indices for Left/Right Eyes
+        LEFT_EYE = [362, 385, 387, 263, 373, 380]
+        RIGHT_EYE = [33, 160, 158, 133, 153, 144]
+
+        # Get Colors (OpenCV is BGR)
+        l_b, l_g, l_r = get_avg_color(LEFT_EYE)
+        r_b, r_g, r_r = get_avg_color(RIGHT_EYE)
+
+        # 4. CHECK LOGIC (Red/Blue Difference)
+        # We use a difference threshold (e.g., Red must be 20 units higher than Blue)
+        THRESHOLD = 15
+
+        # Check Standard: Left=Red, Right=Blue
+        std_left_red = l_r > (l_b + THRESHOLD)
+        std_right_blue = r_b > (r_r + THRESHOLD)
+        
+        # Check Flipped: Left=Blue, Right=Red (Just in case camera is mirrored)
+        flip_left_blue = l_b > (l_r + THRESHOLD)
+        flip_right_red = r_r > (r_b + THRESHOLD)
+
+        is_wearing = (std_left_red and std_right_blue) or (flip_left_blue and flip_right_red)
+
         print(json.dumps({
-            "error": "Usage: python detect_glasses.py <base64_image>"
+            "wearingGlasses": bool(is_wearing),
+            "debug": {
+                "L_Red": int(l_r), "L_Blue": int(l_b),
+                "R_Red": int(r_r), "R_Blue": int(r_b)
+            }
         }))
-        sys.exit(1)
-    
-    base64_image = sys.argv[1]
-    result = detect_glasses(base64_image)
-    print(json.dumps(result))
+
+    except Exception as e:
+        print(json.dumps({"wearingGlasses": False, "error": str(e)}))
 
 if __name__ == "__main__":
-    main()
+    process_image()

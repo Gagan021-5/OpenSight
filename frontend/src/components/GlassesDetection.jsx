@@ -1,12 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Webcam from 'react-webcam';
-import { Camera, AlertCircle, CheckCircle } from 'lucide-react';
+import { Camera, AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react';
 
 const GlassesDetection = ({ onGlassesDetected, onGlassesNotDetected, isActive }) => {
   const webcamRef = useRef(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const [lastResult, setLastResult] = useState(null);
   const [showWarning, setShowWarning] = useState(false);
+  
+  // 🆕 NEW: State to toggle camera visibility
+  const [showCamera, setShowCamera] = useState(false); 
+  
   const intervalRef = useRef(null);
 
   const captureAndVerify = async () => {
@@ -19,21 +23,16 @@ const GlassesDetection = ({ onGlassesDetected, onGlassesNotDetected, isActive })
       const imageSrc = webcamRef.current.getScreenshot();
       
       // Send to backend for verification
-      const response = await fetch('/api/verify-glasses', {
+      const response = await fetch('http://localhost:5000/api/verify-glasses', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          image: imageSrc
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: imageSrc })
       });
       
       const result = await response.json();
       
       if (result.success) {
         setLastResult(result);
-        
         if (result.wearingGlasses) {
           setShowWarning(false);
           onGlassesDetected?.(result);
@@ -41,8 +40,6 @@ const GlassesDetection = ({ onGlassesDetected, onGlassesNotDetected, isActive })
           setShowWarning(true);
           onGlassesNotDetected?.(result);
         }
-      } else {
-        console.error('Glasses verification failed:', result.error);
       }
     } catch (error) {
       console.error('Error verifying glasses:', error);
@@ -51,31 +48,15 @@ const GlassesDetection = ({ onGlassesDetected, onGlassesNotDetected, isActive })
     }
   };
 
-  // Set up periodic verification
   useEffect(() => {
     if (isActive) {
-      // Initial verification after 2 seconds
-      const initialTimeout = setTimeout(() => {
-        captureAndVerify();
-      }, 2000);
-      
-      // Then verify every 5 seconds
-      intervalRef.current = setInterval(() => {
-        captureAndVerify();
-      }, 5000);
+      const initialTimeout = setTimeout(() => captureAndVerify(), 2000);
+      intervalRef.current = setInterval(() => captureAndVerify(), 5000);
       
       return () => {
         clearTimeout(initialTimeout);
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-        }
+        if (intervalRef.current) clearInterval(intervalRef.current);
       };
-    } else {
-      // Clean up when not active
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
     }
   }, [isActive]);
 
@@ -83,97 +64,67 @@ const GlassesDetection = ({ onGlassesDetected, onGlassesNotDetected, isActive })
 
   return (
     <>
-      {/* Hidden webcam for capture */}
-      <div className="fixed top-0 left-0 w-1 h-1 opacity-0 pointer-events-none">
+      {/* 📸 WEBCAM CONTAINER (Dynamic Styles) */}
+      <div className={`fixed transition-all duration-300 z-40 border-2 border-indigo-500 overflow-hidden bg-black rounded-lg ${
+        showCamera 
+          ? "bottom-4 right-4 w-48 h-36 opacity-100 shadow-2xl" // Visible Mode
+          : "top-0 left-0 w-1 h-1 opacity-0 pointer-events-none" // Hidden Mode
+      }`}>
         <Webcam
           ref={webcamRef}
           screenshotFormat="image/jpeg"
           width={320}
           height={240}
           mirrored={true}
+          className="w-full h-full object-cover"
         />
       </div>
 
-      {/* Glasses detection status indicator */}
-      <div className="fixed top-4 left-4 z-30">
-        <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium ${
+      {/* 🛡️ STATUS BADGE (Top Left) */}
+      <div className="fixed top-20 left-4 z-30 flex flex-col gap-2">
+        
+        {/* Status Indicator */}
+        <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium shadow-lg transition-colors ${
           lastResult?.wearingGlasses 
             ? 'bg-green-100 text-green-800 border border-green-200' 
             : 'bg-red-100 text-red-800 border border-red-200'
         }`}>
           {isVerifying ? (
-            <>
-              <div className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent" />
-              <span>Verifying...</span>
-            </>
+            <div className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent" />
           ) : lastResult?.wearingGlasses ? (
-            <>
-              <CheckCircle className="h-4 w-4" />
-              <span>Glasses Detected</span>
-            </>
+            <CheckCircle className="h-4 w-4" />
           ) : (
-            <>
-              <AlertCircle className="h-4 w-4" />
-              <span>No Glasses</span>
-            </>
+            <AlertCircle className="h-4 w-4" />
           )}
+          <span>{isVerifying ? "Scanning..." : lastResult?.wearingGlasses ? "Glasses ON" : "Glasses OFF"}</span>
         </div>
+
+        {/* 🆕 TOGGLE CAMERA BUTTON */}
+        <button 
+          onClick={() => setShowCamera(!showCamera)}
+          className="flex items-center gap-2 px-3 py-2 bg-slate-800 text-slate-200 text-xs rounded-lg hover:bg-slate-700 transition shadow-lg border border-slate-700"
+        >
+          {showCamera ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+          {showCamera ? "Hide Debug Cam" : "Show Debug Cam"}
+        </button>
+
       </div>
 
-      {/* Warning modal when glasses not detected */}
+      {/* ⚠️ WARNING MODAL (Keep your existing modal logic here) */}
       {showWarning && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="mx-4 max-w-md rounded-2xl bg-white p-6 shadow-2xl">
-            <div className="mb-4 flex items-center gap-3">
-              <div className="rounded-full bg-red-100 p-2">
-                <Camera className="h-6 w-6 text-red-600" />
-              </div>
-              <h2 className="text-xl font-bold text-gray-900">Glasses Required</h2>
-            </div>
-            
-            <div className="mb-6 space-y-3 text-gray-700">
-              <p className="leading-relaxed">
-                Please put on your Red/Blue glasses to continue with the therapy session.
-              </p>
-              
-              <div className="rounded-lg bg-amber-50 border border-amber-200 p-4">
-                <p className="font-semibold text-amber-800 mb-2">Why this is important:</p>
-                <ul className="list-disc list-inside space-y-1 text-sm text-amber-700">
-                  <li>Ensures proper dichoptic therapy effect</li>
-                  <li>Guarantees each eye receives correct stimulation</li>
-                  <li>Maintains treatment effectiveness</li>
-                </ul>
-              </div>
-              
-              {lastResult && (
-                <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
-                  Detection confidence: {(lastResult.confidence * 100).toFixed(1)}%
-                </div>
-              )}
-            </div>
-            
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  setShowWarning(false);
-                  captureAndVerify(); // Re-verify
-                }}
-                className="flex-1 rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+           {/* ... (Your existing modal code) ... */}
+           {/* Just adding a basic version for context */}
+           <div className="bg-white p-6 rounded-xl max-w-sm text-center">
+              <h2 className="text-xl font-bold text-red-600 mb-2">⚠️ Glasses Required</h2>
+              <p className="text-gray-600 mb-4">Please put on your Red/Blue glasses.</p>
+              <button 
+                onClick={() => { setShowWarning(false); captureAndVerify(); }}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg w-full"
               >
-                I've Put Them On
+                I put them on
               </button>
-              
-              <button
-                onClick={() => {
-                  setShowWarning(false);
-                  onGlassesNotDetected?.(lastResult);
-                }}
-                className="rounded-lg bg-gray-200 px-4 py-3 font-semibold text-gray-700 transition-colors hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-              >
-                Skip This Time
-              </button>
-            </div>
-          </div>
+           </div>
         </div>
       )}
     </>

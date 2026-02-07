@@ -2,23 +2,25 @@ import { useState, useEffect } from 'react';
 import { useGlobal } from './context/GlobalContext';
 import AppRoutes from './routes';
 import { Eye, Loader2 } from 'lucide-react';
-// We remove 'api' import here because we will use standard fetch for the health check
-// to avoid any Axios configuration issues or stale base URLs.
+
+// 👇 NEW IMPORTS FOR SAFETY & CALIBRATION
+import { CalibrationProvider } from './components/CalibrationPanel'; 
+import SafetyModal from './components/SafetyModal';
 
 function App() {
   const { loading: authLoading } = useGlobal();
   const [isBackendReady, setIsBackendReady] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
 
-  // 🔹 Backend Health Check Logic
+  // 🔹 Backend Health Check Logic (Your existing code)
   useEffect(() => {
     const wakeUpBackend = async () => {
       try {
         console.log(`[Health Check] Attempt ${retryCount + 1}...`);
-
-        // FIX: Hardcode the production URL here. 
-        // This guarantees we hit the live server and ignores any "localhost" ghosts in your build.
-        const res = await fetch('https://visionback.onrender.com/ping');
+        
+        // Using localhost for local dev, but in production this should be your render URL
+        // or a relative path if served from the same origin
+        const res = await fetch('http://localhost:5000/ping');
 
         if (res.ok) {
            console.log("[Health Check] Success! Backend is awake.");
@@ -28,7 +30,6 @@ function App() {
         }
       } catch (error) {
         console.log("[Health Check] Failed. Retrying in 5s...", error);
-        // Retry every 5 seconds until success
         setTimeout(() => setRetryCount(prev => prev + 1), 5000);
       }
     };
@@ -36,7 +37,7 @@ function App() {
     wakeUpBackend();
   }, [retryCount]);
 
-  // 🔹 1. "Waking Up" Screen (Before Backend is ready)
+  // 🔹 1. "Waking Up" Screen
   if (!isBackendReady) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-slate-950 text-slate-50">
@@ -45,12 +46,10 @@ function App() {
              <Eye className="w-16 h-16 text-indigo-500 mx-auto animate-pulse" />
              <Loader2 className="w-20 h-20 text-indigo-400 absolute top-[-8px] left-1/2 -translate-x-1/2 animate-spin opacity-20" />
           </div>
-          
           <h2 className="text-2xl font-bold mb-2">Connecting to Dr. Sight</h2>
           <p className="text-slate-400 mb-6">
             Our specialized therapy engine is warming up. This usually takes 30-60 seconds on the first visit.
           </p>
-          
           <div className="space-y-3">
              <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
                 <div className="bg-indigo-500 h-full animate-progress-indeterminate"></div>
@@ -64,7 +63,7 @@ function App() {
     );
   }
 
-  // 🔹 2. Auth Loading Screen (Backend ready, checking user token)
+  // 🔹 2. Auth Loading Screen
   if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-slate-50 text-slate-900 dark:text-slate-50 dark:bg-slate-950 transition-colors duration-300">
@@ -77,11 +76,19 @@ function App() {
     );
   }
 
-  // 🔹 3. Main App
+  // 🔹 3. Main App (NOW WRAPPED WITH CALIBRATION PROVIDER)
   return (
-    <div className="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 transition-colors duration-300 min-h-screen">
-      <AppRoutes />
-    </div>
+    <CalibrationProvider> {/* 👈 THIS PROVIDES RED/BLUE CONTEXT TO ALL GAMES */}
+      <div className="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 transition-colors duration-300 min-h-screen">
+        
+        {/* 👇 GLOBAL SAFETY POPUP (Appears once per session) */}
+        <SafetyModal />
+        
+        {/* 👇 YOUR ROUTES (Dashboard, Games, etc.) */}
+        <AppRoutes />
+        
+      </div>
+    </CalibrationProvider>
   );
 }
 
