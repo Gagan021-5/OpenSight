@@ -81,7 +81,7 @@ The platform supports two distinct UX modes tailored to patient adherence and ne
 * **Kids Mode**: Bright colors, "Captain" ranks, and a Mission Control interface.
 * **Adults Mode**: Clean Clinical Dashboard with progress charts and a professional data focus.
 
-### 🧠 Hybrid AI Agent (Dr. Sight)
+### 3.🧠 Hybrid AI Agent (Dr. Sight)
 We utilize a RAG (Retrieval-Augmented Generation) architecture to provide intelligent support:
 * **The Brain**: Powered by Llama 3.1 via Groq for ultra-fast inference.
 * **The Router** : An intelligent classifier determines if a user's question is about the App (Static) or General Health (Dynamic).
