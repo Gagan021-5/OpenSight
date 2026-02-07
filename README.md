@@ -13,6 +13,7 @@
   ![Stack](https://img.shields.io/badge/MERN-Full%20Stack-blue?style=flat-square)
   ![Status](https://img.shields.io/badge/Status-Hackathon%20Ready-orange?style=flat-square)
   ![AI](https://img.shields.io/badge/AI-Llama%203.1-purple?style=flat-square)
+  ![Real-Time](https://img.shields.io/badge/Search-Tavily%20Real%20Time-blueviolet?style=flat-square)
   
 </div>
 
@@ -42,8 +43,6 @@ OpenSight bridges this gap by transforming standard screens and $2 Red/Blue glas
 ---
 
 ## How It Works: The Flow
-
-[Image of a flow chart showing user login, age group selection, game selection, dichoptic rendering, and score saving]
 
 ```mermaid
 graph TD
@@ -82,10 +81,12 @@ The platform supports two distinct UX modes tailored to patient adherence and ne
 * **Kids Mode**: Bright colors, "Captain" ranks, and a Mission Control interface.
 * **Adults Mode**: Clean Clinical Dashboard with progress charts and a professional data focus.
 
-### 3. 🤖 AI Dr. Sight
-* Powered by **Llama 3.1** via Groq with a **local fallback knowledge base** to ensure reliability.
-* Provides detailed medical guidance and instant answers to therapy questions.
-* **Resilient Architecture**: Ensures basic guidance is available even if the remote API is offline.
+### 🧠 Hybrid AI Agent (Dr. Sight)
+We utilize a RAG (Retrieval-Augmented Generation) architecture to provide intelligent support:
+* **The Brain**: Powered by Llama 3.1 via Groq for ultra-fast inference.
+* **The Router** : An intelligent classifier determines if a user's question is about the App (Static) or General Health (Dynamic).
+
+Real-Time Search: Integrated Tavily AI to fetch live medical data and research from the web when users ask complex questions (e.g., "Latest research on lazy eye"), ensuring our AI is never outdated.
 
 ### 4. 🎬 Cinema Mode
 * Games run in a dedicated immersive HUD with full-screen canvas support.
