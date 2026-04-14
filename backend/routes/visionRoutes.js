@@ -27,7 +27,8 @@ visionrouter.post("/verify-glasses", async (req, res) => {
       "detect_glasses.py",
     );
 
-    const pythonProcess = spawn("python", [scriptPath]);
+    const pythonCommand = process.platform === "win32" ? "python" : "python3";
+    const pythonProcess = spawn(pythonCommand, [scriptPath]);
 
     let result = "";
     let error = "";

@@ -136,11 +136,11 @@ export default function DichopticSnake({ onGameEnd }) {
       {/* RESPONSIVE LAYOUT */}
       <div className="flex flex-col lg:flex-row gap-8 items-start justify-center w-full max-w-6xl">
         
-        <div ref={containerRef} className={`relative w-full lg:flex-1 bg-neutral-950 flex items-center justify-center transition-all duration-300 ${isFullScreen ? 'fixed inset-0 z-50' : 'border-4 border-neutral-800 rounded-lg shadow-2xl aspect-square lg:h-[600px] lg:w-auto'}`}>
+        <div ref={containerRef} className={`relative bg-neutral-950 flex items-center justify-center transition-all duration-300 ${isFullScreen ? 'fixed inset-0 z-50 w-full h-full' : 'w-full lg:flex-1 border-4 border-neutral-800 rounded-lg shadow-2xl aspect-square lg:h-[600px] lg:w-auto'}`}>
           <button onClick={toggleFullScreen} className="absolute top-4 right-4 p-2 bg-gray-800/50 hover:bg-gray-700 rounded-full text-white z-50 transition">
             {isFullScreen ? <Minimize size={24} /> : <Maximize size={24} />}
           </button>
-          <canvas ref={canvasRef} width={INTERNAL_WIDTH} height={INTERNAL_HEIGHT} className={`block shadow-2xl ${isFullScreen ? 'max-h-screen max-w-full object-contain' : 'w-full h-full object-contain'}`} style={{ backgroundColor: '#000' }} />
+          <canvas ref={canvasRef} width={INTERNAL_WIDTH} height={INTERNAL_HEIGHT} className="block w-full h-full object-contain shadow-2xl" style={{ backgroundColor: '#000' }} />
           
           {gameState !== 'PLAYING' && (
             <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-40 backdrop-blur-sm">
