@@ -2,7 +2,12 @@ import axios from 'axios';
 
 // 🛑 FORCE PRODUCTION URL
 // We are intentionally ignoring import.meta.env to prevent localhost from sneaking in.
-const API_BASE = 'https://visionback.onrender.com/api';
+const API_BASE =
+  import.meta.env.MODE === "development"
+    ? "http://localhost:5000/api"
+    : "https://visionback.onrender.com/api";
+
+
 
 const api = axios.create({
   baseURL: API_BASE,
