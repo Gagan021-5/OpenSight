@@ -18,9 +18,12 @@ function App() {
       try {
         console.log(`[Health Check] Attempt ${retryCount + 1}...`);
         
-        // Using localhost for local dev, but in production this should be your render URL
-        // or a relative path if served from the same origin
-        const res = await fetch('http://localhost:5000/ping');
+        // Automatically switch between local and production URLs
+        const baseUrl = import.meta.env.MODE === "development" 
+          ? "http://localhost:5000" 
+          : "https://visionback.onrender.com";
+          
+        const res = await fetch(`${baseUrl}/ping`);
 
         if (res.ok) {
            console.log("[Health Check] Success! Backend is awake.");
