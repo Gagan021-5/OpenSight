@@ -128,23 +128,21 @@ const GameCard = ({ game, isKids }) => {
       <div className={`absolute inset-x-0 top-0 h-32 opacity-20 transition-opacity duration-500 group-hover:opacity-30 ${
         isKids 
           ? "bg-gradient-to-b from-yellow-300 to-transparent" 
-          : isGlassless
-            ? "bg-gradient-to-b from-emerald-100 to-transparent"
-            : "bg-gradient-to-b from-indigo-100 to-transparent"
+          : "bg-gradient-to-b from-indigo-100 to-transparent"
       }`} />
 
       <div className="relative p-8 flex flex-col h-full z-10">
         {/* Mode Badge */}
         {!isKids && (
-          <div className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider mb-4 w-fit ${
+          <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wider mb-4 w-fit ${
             isGlassless
-              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-              : "bg-red-50 text-red-700 border border-red-200"
+              ? "bg-slate-100 text-slate-700 border border-slate-200"
+              : "bg-indigo-50 text-indigo-700 border border-indigo-200"
           }`}>
             {isGlassless ? (
-              <><Eye size={10} /> Glassless</>
+              <><Eye size={12} /> Glassless</>
             ) : (
-              <><Sparkles size={10} /> Dichoptic · Glasses Required</>
+              <><Sparkles size={12} /> Dichoptic · Glasses Required</>
             )}
           </div>
         )}
@@ -153,9 +151,7 @@ const GameCard = ({ game, isKids }) => {
         <div className={`w-16 h-16 rounded-2xl mb-6 flex items-center justify-center shadow-lg transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3 ${
           isKids
             ? "bg-gradient-to-br from-yellow-400 to-orange-500 text-white"
-            : isGlassless
-              ? "bg-gradient-to-br from-emerald-500 to-teal-600 text-white"
-              : "bg-gradient-to-br from-slate-800 to-slate-900 text-white"
+            : "bg-gradient-to-br from-slate-800 to-indigo-950 text-white"
         }`}>
           <IconComponent size={32} strokeWidth={2} />
         </div>
@@ -256,7 +252,7 @@ export default function Dashboard() {
                 <>
                   Hi, <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-700 to-indigo-600">
                     {userProfile?.name?.split(' ')[0] || 'There'}!
-                  </span> 👋
+                  </span>
                 </>
               )}
             </motion.h1>
@@ -317,8 +313,8 @@ export default function Dashboard() {
             onClick={() => navigate('/destrain')}
             className={`w-full group relative overflow-hidden rounded-3xl border transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 text-left ${
               isKids
-                ? "bg-gradient-to-r from-emerald-400 to-cyan-400 border-emerald-300 shadow-xl shadow-emerald-200/40 hover:shadow-emerald-300/50"
-                : "bg-gradient-to-r from-emerald-600 to-teal-600 border-emerald-500/30 shadow-xl shadow-emerald-500/20 hover:shadow-emerald-500/30"
+                ? "bg-gradient-to-r from-yellow-400 to-orange-500 border-yellow-300 shadow-xl shadow-yellow-200/40 hover:shadow-yellow-300/50"
+                : "bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border-indigo-800/40 shadow-xl shadow-slate-900/10 hover:shadow-indigo-900/20"
             }`}
           >
             {/* Background pattern */}
@@ -329,7 +325,7 @@ export default function Dashboard() {
 
             <div className="relative flex items-center gap-6 p-6 sm:p-8">
               <div className={`shrink-0 w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-110 group-hover:rotate-3 ${
-                isKids ? "bg-white/30 backdrop-blur-sm" : "bg-white/15 backdrop-blur-sm"
+                isKids ? "bg-white/30 backdrop-blur-sm" : "bg-indigo-500/20 border border-indigo-400/30 backdrop-blur-sm"
               }`}>
                 <Eye className="w-8 h-8 text-white" />
               </div>
@@ -337,9 +333,9 @@ export default function Dashboard() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <h3 className={`text-xl sm:text-2xl font-black text-white ${isKids ? 'font-nunito' : 'tracking-tight'}`}>
-                    {isKids ? '⚡ Quick Eye Power-Up!' : 'Quick 5-Min Eye De-Strain'}
+                    {isKids ? '🚀 Quick Eye Power-Up!' : 'Quick 5-Min Eye De-Strain'}
                   </h3>
-                  <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 bg-white/20 backdrop-blur-sm rounded-full text-[10px] font-bold text-white uppercase">
+                  <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 bg-white/10 backdrop-blur-sm border border-white/10 rounded-full text-[10px] font-semibold text-white/90 uppercase tracking-wider">
                     <Timer size={10} /> 5 min
                   </span>
                 </div>

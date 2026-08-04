@@ -32,14 +32,14 @@ const FOCUS_ZONE = 0.85; // tap is "good" when oscillation phase > this (near pe
 
 // Vibrant full-color palette (no red/blue anaglyph)
 const COLORS = {
-  bg: '#0A0E17',
-  targetFill: '#10B981',       // Emerald-500
-  targetGlow: '#34D399',       // Emerald-400
-  ringStroke: '#06B6D4',       // Cyan-500
-  focusFlash: '#ECFDF5',       // Emerald-50
-  textPrimary: '#F1F5F9',
+  bg: '#0F172A',
+  targetFill: '#4F46E5',       // Indigo-600
+  targetGlow: '#818CF8',       // Indigo-400
+  ringStroke: '#38BDF8',       // Sky-400
+  focusFlash: '#EEF2FF',       // Indigo-50
+  textPrimary: '#F8FAFC',
   textMuted: '#94A3B8',
-  accentBtn: '#10B981',
+  accentBtn: '#4F46E5',
 };
 
 export default function ZoomingTarget({ onGameEnd, requiresGlasses }) {
@@ -187,7 +187,7 @@ export default function ZoomingTarget({ onGameEnd, requiresGlasses }) {
       // Blurs as target shrinks (low sineVal), sharp when large
       const ringRadius = radius + 20 + (1 - sineVal) * 15;
       const ringAlpha = 0.15 + sineVal * 0.45;
-      ctx.strokeStyle = `rgba(6, 182, 212, ${ringAlpha})`;
+      ctx.strokeStyle = `rgba(56, 189, 248, ${ringAlpha})`;
       ctx.lineWidth = 2 + sineVal * 2;
       ctx.setLineDash([4 + sineVal * 8, 6 - sineVal * 4]);
       ctx.beginPath();
@@ -197,8 +197,8 @@ export default function ZoomingTarget({ onGameEnd, requiresGlasses }) {
 
       // ── Target glow ──
       const glowGrad = ctx.createRadialGradient(cx, cy, radius * 0.5, cx, cy, radius * 2.5);
-      glowGrad.addColorStop(0, `rgba(16, 185, 129, ${0.15 * sineVal})`);
-      glowGrad.addColorStop(1, 'rgba(16, 185, 129, 0)');
+      glowGrad.addColorStop(0, `rgba(99, 102, 241, ${0.2 * sineVal})`);
+      glowGrad.addColorStop(1, 'rgba(99, 102, 241, 0)');
       ctx.fillStyle = glowGrad;
       ctx.beginPath();
       ctx.arc(cx, cy, radius * 2.5, 0, Math.PI * 2);
@@ -206,9 +206,9 @@ export default function ZoomingTarget({ onGameEnd, requiresGlasses }) {
 
       // ── Main target ──
       const targetGrad = ctx.createRadialGradient(cx - radius * 0.3, cy - radius * 0.3, 0, cx, cy, radius);
-      targetGrad.addColorStop(0, '#34D399');
-      targetGrad.addColorStop(0.7, '#10B981');
-      targetGrad.addColorStop(1, '#059669');
+      targetGrad.addColorStop(0, '#818CF8');
+      targetGrad.addColorStop(0.7, '#6366F1');
+      targetGrad.addColorStop(1, '#4338CA');
       ctx.fillStyle = targetGrad;
       ctx.beginPath();
       ctx.arc(cx, cy, radius, 0, Math.PI * 2);
@@ -230,25 +230,25 @@ export default function ZoomingTarget({ onGameEnd, requiresGlasses }) {
       ctx.fillStyle = 'rgba(148, 163, 184, 0.1)';
       ctx.fillRect(barX, barY, barWidth, 6);
       // Filled portion
-      const fillColor = sineVal >= FOCUS_ZONE ? '#10B981' : '#475569';
+      const fillColor = sineVal >= FOCUS_ZONE ? '#6366F1' : '#475569';
       ctx.fillStyle = fillColor;
       ctx.fillRect(barX, barY, barWidth * sineVal, 6);
       // Focus zone marker
-      ctx.fillStyle = 'rgba(16, 185, 129, 0.3)';
+      ctx.fillStyle = 'rgba(99, 102, 241, 0.3)';
       ctx.fillRect(barX + barWidth * FOCUS_ZONE, barY - 2, barWidth * (1 - FOCUS_ZONE), 10);
 
       // Label
-      ctx.fillStyle = sineVal >= FOCUS_ZONE ? '#10B981' : COLORS.textMuted;
+      ctx.fillStyle = sineVal >= FOCUS_ZONE ? '#818CF8' : COLORS.textMuted;
       ctx.font = 'bold 11px system-ui, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(sineVal >= FOCUS_ZONE ? '● TAP NOW' : 'Wait for focus...', cx, barY - 8);
+      ctx.fillText(sineVal >= FOCUS_ZONE ? 'TAP NOW' : 'Wait for focus...', cx, barY - 8);
 
       // ── Feedback flash ──
       if (feedback) {
         const age = Date.now() - feedback.ts;
         if (age < 400) {
           ctx.globalAlpha = 1 - age / 400;
-          ctx.fillStyle = feedback.type === 'good' ? '#10B981' : '#EF4444';
+          ctx.fillStyle = feedback.type === 'good' ? '#818CF8' : '#EF4444';
           ctx.font = 'bold 28px system-ui, sans-serif';
           ctx.textAlign = 'center';
           ctx.fillText(feedback.type === 'good' ? '+10' : 'MISS', cx, cy - radius - 25);
@@ -292,14 +292,14 @@ export default function ZoomingTarget({ onGameEnd, requiresGlasses }) {
   }, [gameState, handleTap]);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-[#0A0E17] font-sans text-white p-4">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-slate-950 font-sans text-white p-4">
       {!isFullScreen && (
         <div className="flex items-center gap-3 mb-6">
-          <Focus className="w-8 h-8 text-emerald-400" />
-          <h1 className="text-3xl font-bold tracking-tighter uppercase">
+          <Focus className="w-8 h-8 text-indigo-400" />
+          <h1 className="text-3xl font-bold tracking-tight uppercase">
             Dynamic Focus
           </h1>
-          <span className="px-2 py-0.5 text-xs font-bold bg-emerald-500/20 text-emerald-400 rounded-full border border-emerald-500/30">
+          <span className="px-2.5 py-0.5 text-xs font-semibold bg-indigo-500/20 text-indigo-300 rounded-full border border-indigo-500/30">
             GLASSLESS
           </span>
         </div>
@@ -308,28 +308,28 @@ export default function ZoomingTarget({ onGameEnd, requiresGlasses }) {
       <div className="flex flex-col lg:flex-row gap-8 items-start justify-center w-full max-w-6xl">
 
         {/* Game Area */}
-        <div ref={containerRef} className="relative w-full lg:flex-1 bg-[#0A0E17] flex items-center justify-center border-4 border-slate-800 rounded-lg shadow-2xl aspect-square overflow-hidden">
-          <button onClick={toggleFullScreen} className="absolute top-4 right-4 p-2 bg-gray-800/50 hover:bg-gray-700 rounded-full z-50">
+        <div ref={containerRef} className="relative w-full lg:flex-1 bg-slate-950 flex items-center justify-center border-4 border-slate-800 rounded-2xl shadow-2xl aspect-square overflow-hidden">
+          <button onClick={toggleFullScreen} className="absolute top-4 right-4 p-2 bg-slate-800/50 hover:bg-slate-700 rounded-full z-50">
             {isFullScreen ? <Minimize size={24} /> : <Maximize size={24} />}
           </button>
 
           <canvas ref={canvasRef} width={INTERNAL_WIDTH} height={INTERNAL_HEIGHT} className="block w-full h-full object-contain cursor-pointer" />
 
           {gameState !== 'PLAYING' && !showSummary && (
-            <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-40 backdrop-blur-sm">
-              <h2 className="text-4xl font-black mb-2 uppercase">{gameState === 'PAUSED' ? 'Paused' : 'Dynamic Focus'}</h2>
-              <p className="text-slate-400 text-sm mb-6 max-w-xs text-center">
+            <div className="absolute inset-0 bg-slate-950/85 flex flex-col items-center justify-center z-40 backdrop-blur-sm">
+              <h2 className="text-4xl font-black mb-2 uppercase tracking-tight">{gameState === 'PAUSED' ? 'Paused' : 'Dynamic Focus'}</h2>
+              <p className="text-slate-400 text-sm mb-6 max-w-xs text-center font-medium">
                 Flex your ciliary muscles — tap when the target reaches peak size.
               </p>
               <div className="flex flex-col gap-4">
                 <button
                   onClick={() => gameState === 'START' ? startGame() : setGameState('PLAYING')}
-                  className="flex items-center justify-center gap-2 px-8 py-4 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-full text-xl shadow-lg shadow-emerald-500/30 transition hover:scale-105"
+                  className="flex items-center justify-center gap-2 px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-full text-xl shadow-lg shadow-indigo-500/30 transition hover:scale-105"
                 >
                   <Play fill="currentColor" /> {gameState === 'START' ? 'START' : 'CONTINUE'}
                 </button>
                 {gameState !== 'START' && (
-                  <button onClick={endGame} className="px-6 py-2 bg-neutral-700 hover:bg-neutral-600 rounded-full text-sm font-bold">
+                  <button onClick={endGame} className="px-6 py-2 bg-slate-800 hover:bg-slate-700 rounded-full text-sm font-bold border border-slate-700">
                     Finish Session
                   </button>
                 )}
@@ -338,26 +338,23 @@ export default function ZoomingTarget({ onGameEnd, requiresGlasses }) {
           )}
           <div className="absolute top-4 left-4 text-white font-mono font-bold text-xl drop-shadow-md z-30">
             SCORE: {score}
-            {streak >= 3 && <span className="text-xs text-emerald-400 block mt-1">🔥 {streak}x Streak!</span>}
+            {streak >= 3 && <span className="text-xs text-indigo-400 block mt-1">{streak}x Streak</span>}
           </div>
         </div>
 
         {/* Sidebar */}
         {!isFullScreen && (
-          <div className="w-full lg:w-80 bg-slate-800/50 p-6 rounded-xl border border-slate-700 h-auto flex flex-col">
-            <div className="flex items-center gap-2 mb-6 text-emerald-400 uppercase text-xs font-bold tracking-widest">
+          <div className="w-full lg:w-80 bg-slate-900/60 p-6 rounded-2xl border border-slate-800 h-auto flex flex-col">
+            <div className="flex items-center gap-2 mb-6 text-indigo-400 uppercase text-xs font-bold tracking-wider">
               <Settings size={14} /> How It Works
             </div>
             <div className="space-y-4 flex-1 text-sm text-slate-300">
-              <p>A target <strong className="text-emerald-400">pulses in and out</strong>, simulating near and far focus shifts.</p>
+              <p>A target <strong className="text-indigo-400">pulses in and out</strong>, simulating near and far focus shifts.</p>
               <p><strong className="text-white">Tap or click</strong> when the target reaches its largest size (the "focus zone").</p>
-              <p className="text-emerald-400 font-bold">Land 3+ taps in a row for streak bonuses!</p>
-              <div className="bg-slate-900/60 p-3 rounded-lg text-xs text-slate-400 border border-slate-700">
-                <p className="font-semibold text-slate-300 mb-1">🧬 Clinical Purpose</p>
+              <p className="text-indigo-400 font-semibold">Land 3+ taps in a row for streak bonuses.</p>
+              <div className="bg-slate-950/80 p-4 rounded-xl text-xs text-slate-400 border border-slate-800 space-y-1">
+                <p className="font-semibold text-slate-200">Clinical Purpose</p>
                 <p>This exercise trains <em>accommodative flexibility</em> — the ability of your ciliary muscles to shift focus between near and far distances. Regular practice can relieve eye strain from prolonged screen use.</p>
-              </div>
-              <div className="lg:hidden text-center mt-6 p-4 bg-slate-700/50 rounded-lg italic">
-                <p>Tap the target or press Enter to confirm focus</p>
               </div>
             </div>
           </div>
