@@ -46,9 +46,22 @@ const SafetyModal = () => {
             <li>Eye pain or severe redness.</li>
             <li>History of seizures (Photosensitivity).</li>
           </ul>
+
+          {/* Mode-Specific Info */}
+          <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800 text-xs space-y-1">
+            <p className="font-bold text-blue-700 dark:text-blue-300">🔴🔵 Dichoptic Mode (Glasses Required)</p>
+            <p>Designed for <strong>Amblyopia cortical anti-suppression</strong> using red/blue anaglyph glasses. Each eye receives a separate color-filtered stream to retrain binocular fusion.</p>
+          </div>
+          <div className="bg-emerald-50 dark:bg-emerald-900/20 p-3 rounded-lg border border-emerald-200 dark:border-emerald-800 text-xs space-y-1">
+            <p className="font-bold text-emerald-700 dark:text-emerald-300">👁️ Glassless Mode (No Equipment)</p>
+            <p>Designed for daily <strong>digital eye strain relief</strong>, visual tracking, and focus flexibility. Rendered in full color — no special glasses needed.</p>
+          </div>
+
           <p className="text-xs bg-slate-100 dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
-            <strong>Disclaimer:</strong> This is a therapy tool, NOT a diagnostic device. 
-            If you experience discomfort, stop immediately and consult an eye doctor.
+            <strong>Disclaimer:</strong> OpenSight is a neuro-rehabilitative training and visual 
+            fatigue maintenance tool. It does NOT diagnose, treat, or cure organic eye diseases, 
+            physical refractive errors (nearsightedness/farsightedness), or replace professional 
+            medical care. If you experience discomfort, stop immediately and consult an eye doctor.
           </p>
         </div>
 

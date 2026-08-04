@@ -8,7 +8,9 @@ import {
   CheckCircle2,
   ShieldCheck,
   BrainCircuit,
-  Globe
+  Globe,
+  Eye,
+  Glasses
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
@@ -90,7 +92,7 @@ export default function LandingPage() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="text-lg sm:text-xl md:text-2xl text-slate-600 max-w-3xl mx-auto mb-10 leading-relaxed font-medium"
           >
-            {t("landing.subtitle") || "Clinically inspired exercises gamified for Amblyopia, Strabismus, and Convergence Insufficiency. Accessible anywhere, anytime."}
+            {t("landing.subtitle") || "Clinically inspired exercises for Amblyopia anti-suppression (dichoptic mode with red/blue glasses) and daily digital eye strain relief (glassless mode). Accessible anywhere, anytime."}
           </motion.p>
 
           <motion.div
@@ -106,7 +108,15 @@ export default function LandingPage() {
               {t("landing.getStarted") || "Start Therapy Now"}
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Link>
-            
+
+            <Link
+              to="/destrain"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition-all duration-300 hover:shadow-md text-lg"
+            >
+              <Eye className="w-5 h-5" />
+              {"Try Free De-Strain"}
+            </Link>
+
             <Link
               to="/sign-in"
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 transition-all duration-300 hover:shadow-md text-lg"
@@ -143,24 +153,37 @@ export default function LandingPage() {
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <FeatureCard 
-              icon={Gamepad2}
-              title={t("landing.games") || "Gamified Therapy"}
-              desc={t("landing.gamesDesc") || "Engaging exercises designed to break suppression and improve binocular vision without the boredom of traditional therapy."}
+              icon={Glasses}
+              title="Dichoptic Training"
+              desc="Red/blue anaglyph glasses split the visual stream to each eye, breaking cortical suppression and retraining binocular fusion for Amblyopia therapy."
               delay={0.1}
             />
             <FeatureCard 
-              icon={Target}
-              title={t("landing.logic") || "Dichoptic Training"}
-              desc={t("landing.logicDesc") || "Advanced red-blue separation logic ensures each eye works independently before fusing images together."}
+              icon={Eye}
+              title="Glassless Eye Wellness"
+              desc="No special equipment needed. Accommodative focus and saccadic precision exercises relieve digital eye strain, improve tracking, and boost visual flexibility."
               delay={0.2}
             />
             <FeatureCard 
               icon={Zap}
               title={t("landing.progress") || "Real-time Analytics"}
-              desc={t("landing.progressDesc") || "Track your visual acuity improvements with detailed charts, streaks, and AI-driven insights."}
+              desc={t("landing.progressDesc") || "Track your visual improvements with detailed charts, streaks, and AI-driven insights across both therapy modes."}
               delay={0.3}
             />
           </div>
+
+          {/* Medical Disclaimer */}
+          <motion.p
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.4 }}
+            className="text-center text-xs text-slate-400 mt-12 max-w-3xl mx-auto leading-relaxed"
+          >
+            <strong>Medical Disclaimer:</strong> OpenSight is a neuro-rehabilitative training and visual fatigue maintenance tool. 
+            It does NOT diagnose, treat, or cure organic eye diseases, physical refractive errors (nearsightedness/farsightedness), 
+            or replace professional medical care. Always consult a qualified eye care professional.
+          </motion.p>
         </section>
 
       </main>

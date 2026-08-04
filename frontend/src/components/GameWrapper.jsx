@@ -1,16 +1,21 @@
 import { useRef, useState, useEffect, cloneElement, Children } from 'react';
 import { Maximize, Minimize } from 'lucide-react';
 import { useGlobal } from '../context/GlobalContext.jsx';
+import { getGameById } from '../config/gameRegistry.js';
 
 /**
  * Wraps every game: fullscreen toggle, game-over detection, auto-save score.
- * Injects onGameEnd(score, durationSeconds) and isFullScreen.
+ * Injects onGameEnd(score, durationSeconds), isFullScreen, and requiresGlasses.
  * Fullscreen: canvas scales to fill viewport without stretching (flex center + max-h-full max-w-full).
  */
 export default function GameWrapper({ gameId, children }) {
   const containerRef = useRef(null);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const { submitScore } = useGlobal();
+
+  // ── Look up whether this game needs glasses from the registry ──
+  const gameDef = getGameById(gameId);
+  const requiresGlasses = gameDef?.requiresGlasses ?? true; // default true for safety
 
   const onGameEnd = (score, durationSeconds) => {
     submitScore(gameId, score, typeof durationSeconds === 'number' ? durationSeconds : 0);
@@ -38,7 +43,7 @@ export default function GameWrapper({ gameId, children }) {
   }, []);
 
   const child = Children.only(children);
-  const withProps = cloneElement(child, { onGameEnd, isFullScreen });
+  const withProps = cloneElement(child, { onGameEnd, isFullScreen, requiresGlasses });
 
   return (
     <div
@@ -61,3 +66,4 @@ export default function GameWrapper({ gameId, children }) {
     </div>
   );
 }
+

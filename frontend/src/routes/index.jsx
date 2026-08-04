@@ -17,6 +17,7 @@ import ZoomingTarget from '../components/ZoomingTarget.jsx';
 import TherapyTetris from '../components/TherapyTetris.jsx';
 import WhackATarget from '../components/WhackATarget.jsx';
 import Lighthouse from '../components/Lighthouse.jsx';
+import DestrainRoutine from '../pages/DestrainRoutine.jsx';
 
 export default function AppRoutes() {
   const { isSignedIn, loading } = useGlobal();
@@ -65,6 +66,9 @@ export default function AppRoutes() {
         path="/game/lighthouse"
         element={<ProtectedRoute><GameWrapper gameId="neglect"><Lighthouse /></GameWrapper></ProtectedRoute>}
       />
+
+      {/* Public De-Strain Route — accessible without login */}
+      <Route path="/destrain" element={<DestrainRoutine />} />
 
       <Route path="/" element={isSignedIn ? <Navigate to="/dashboard" replace /> : <LandingPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Gamepad2,
   Target,
@@ -9,7 +9,9 @@ import {
   Activity,
   Trophy,
   CalendarDays,
-  ArrowUpRight
+  ArrowUpRight,
+  Eye,
+  Timer
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
@@ -110,6 +112,7 @@ const StatCard = ({ icon: Icon, label, value, isKids, colorTheme }) => {
 
 const GameCard = ({ game, isKids }) => {
   const IconComponent = ICON_MAP[game.iconType] || Play;
+  const isGlassless = game.requiresGlasses === false;
   
   return (
     <motion.div
@@ -125,15 +128,34 @@ const GameCard = ({ game, isKids }) => {
       <div className={`absolute inset-x-0 top-0 h-32 opacity-20 transition-opacity duration-500 group-hover:opacity-30 ${
         isKids 
           ? "bg-gradient-to-b from-yellow-300 to-transparent" 
-          : "bg-gradient-to-b from-indigo-100 to-transparent"
+          : isGlassless
+            ? "bg-gradient-to-b from-emerald-100 to-transparent"
+            : "bg-gradient-to-b from-indigo-100 to-transparent"
       }`} />
 
       <div className="relative p-8 flex flex-col h-full z-10">
+        {/* Mode Badge */}
+        {!isKids && (
+          <div className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider mb-4 w-fit ${
+            isGlassless
+              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+              : "bg-red-50 text-red-700 border border-red-200"
+          }`}>
+            {isGlassless ? (
+              <><Eye size={10} /> Glassless</>
+            ) : (
+              <><Sparkles size={10} /> Dichoptic · Glasses Required</>
+            )}
+          </div>
+        )}
+
         {/* Icon Container */}
         <div className={`w-16 h-16 rounded-2xl mb-6 flex items-center justify-center shadow-lg transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3 ${
           isKids
             ? "bg-gradient-to-br from-yellow-400 to-orange-500 text-white"
-            : "bg-gradient-to-br from-slate-800 to-slate-900 text-white"
+            : isGlassless
+              ? "bg-gradient-to-br from-emerald-500 to-teal-600 text-white"
+              : "bg-gradient-to-br from-slate-800 to-slate-900 text-white"
         }`}>
           <IconComponent size={32} strokeWidth={2} />
         </div>
@@ -172,6 +194,7 @@ const GameCard = ({ game, isKids }) => {
 export default function Dashboard() {
   const { t } = useTranslation();
   const { userProfile, ageGroup } = useGlobal();
+  const navigate = useNavigate();
   const [games, setGames] = useState([]);
   const streak = useDailyStreak();
   
@@ -282,6 +305,56 @@ export default function Dashboard() {
           transition={{ duration: 0.8, delay: 0.5 }}
           className="h-px w-full bg-gradient-to-r from-transparent via-slate-200 to-transparent mb-12"
         />
+
+        {/* ── Quick De-Strain Banner ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.6 }}
+          className="mb-12"
+        >
+          <button
+            onClick={() => navigate('/destrain')}
+            className={`w-full group relative overflow-hidden rounded-3xl border transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 text-left ${
+              isKids
+                ? "bg-gradient-to-r from-emerald-400 to-cyan-400 border-emerald-300 shadow-xl shadow-emerald-200/40 hover:shadow-emerald-300/50"
+                : "bg-gradient-to-r from-emerald-600 to-teal-600 border-emerald-500/30 shadow-xl shadow-emerald-500/20 hover:shadow-emerald-500/30"
+            }`}
+          >
+            {/* Background pattern */}
+            <div className="absolute inset-0 opacity-10">
+              <div className="absolute top-[-20%] right-[-10%] w-64 h-64 rounded-full bg-white/30 blur-3xl" />
+              <div className="absolute bottom-[-20%] left-[-5%] w-48 h-48 rounded-full bg-white/20 blur-2xl" />
+            </div>
+
+            <div className="relative flex items-center gap-6 p-6 sm:p-8">
+              <div className={`shrink-0 w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-110 group-hover:rotate-3 ${
+                isKids ? "bg-white/30 backdrop-blur-sm" : "bg-white/15 backdrop-blur-sm"
+              }`}>
+                <Eye className="w-8 h-8 text-white" />
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className={`text-xl sm:text-2xl font-black text-white ${isKids ? 'font-nunito' : 'tracking-tight'}`}>
+                    {isKids ? '⚡ Quick Eye Power-Up!' : 'Quick 5-Min Eye De-Strain'}
+                  </h3>
+                  <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 bg-white/20 backdrop-blur-sm rounded-full text-[10px] font-bold text-white uppercase">
+                    <Timer size={10} /> 5 min
+                  </span>
+                </div>
+                <p className={`text-white/80 text-sm sm:text-base ${isKids ? 'font-nunito' : ''}`}>
+                  {isKids
+                    ? 'A quick mission to recharge your super vision — no glasses needed!'
+                    : 'Accommodative focus + saccadic precision — relieve digital eye strain instantly. No glasses needed.'
+                  }
+                </p>
+              </div>
+
+              <ArrowUpRight className="shrink-0 w-6 h-6 text-white/70 group-hover:text-white group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" />
+            </div>
+          </button>
+        </motion.div>
 
         {/* Games Section */}
         <div className="relative">
