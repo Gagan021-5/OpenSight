@@ -111,9 +111,9 @@ export default function LandingPage() {
 
             <Link
               to="/destrain"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition-all duration-300 hover:shadow-md text-lg"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full font-bold text-indigo-900 bg-indigo-50 border border-indigo-200/80 hover:bg-indigo-100 transition-all duration-300 hover:shadow-md text-lg"
             >
-              <Eye className="w-5 h-5" />
+              <Eye className="w-5 h-5 text-indigo-600" />
               {"Try Free De-Strain"}
             </Link>
 
