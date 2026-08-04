@@ -37,6 +37,13 @@ const BASE_RADIUS = 22;
 const SPAWN_INTERVAL_MS = 1100;
 const TARGET_LIFESPAN_MS = 1400; // time before target expires
 
+const COLORS = {
+  bg: '#0F172A',
+  textPrimary: '#F8FAFC',
+  textMuted: '#94A3B8',
+  gridLine: 'rgba(148, 163, 184, 0.06)',
+};
+
 // Curated vibrant palette — no red or blue anaglyph colors
 const TARGET_COLORS = [
   '#F59E0B', // Amber-500
@@ -48,13 +55,6 @@ const TARGET_COLORS = [
   '#06B6D4', // Cyan-500
   '#F97316', // Orange-500
 ];
-
-const COLORS = {
-  bg: '#0A0E17',
-  textPrimary: '#F1F5F9',
-  textMuted: '#94A3B8',
-  gridLine: 'rgba(148, 163, 184, 0.06)',
-};
 
 export default function WhackATarget({ onGameEnd, requiresGlasses }) {
   const canvasRef = useRef(null);
@@ -309,12 +309,12 @@ export default function WhackATarget({ onGameEnd, requiresGlasses }) {
     : 100;
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-[#0A0E17] font-sans text-white p-4">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-slate-950 font-sans text-white p-4">
       {!isFullScreen && (
         <div className="flex items-center gap-3 mb-6">
-          <Crosshair className="w-8 h-8 text-violet-400" />
-          <h1 className="text-3xl font-bold tracking-tighter uppercase">Saccadic Precision</h1>
-          <span className="px-2 py-0.5 text-xs font-bold bg-violet-500/20 text-violet-400 rounded-full border border-violet-500/30">
+          <Crosshair className="w-8 h-8 text-indigo-400" />
+          <h1 className="text-3xl font-bold tracking-tight uppercase">Saccadic Precision</h1>
+          <span className="px-2.5 py-0.5 text-xs font-semibold bg-indigo-500/20 text-indigo-300 rounded-full border border-indigo-500/30">
             GLASSLESS
           </span>
         </div>
@@ -322,28 +322,28 @@ export default function WhackATarget({ onGameEnd, requiresGlasses }) {
 
       <div className="flex flex-col lg:flex-row gap-8 items-start justify-center w-full max-w-6xl">
         {/* GAME CONTAINER */}
-        <div ref={containerRef} className="relative w-full lg:flex-1 bg-[#0A0E17] flex items-center justify-center border-4 border-slate-800 rounded-lg shadow-2xl aspect-square overflow-hidden">
-          <button onClick={toggleFullScreen} className="absolute top-4 right-4 p-2 bg-gray-800/50 hover:bg-gray-700 rounded-full z-50">
+        <div ref={containerRef} className="relative w-full lg:flex-1 bg-slate-950 flex items-center justify-center border-4 border-slate-800 rounded-2xl shadow-2xl aspect-square overflow-hidden">
+          <button onClick={toggleFullScreen} className="absolute top-4 right-4 p-2 bg-slate-800/50 hover:bg-slate-700 rounded-full z-50">
             {isFullScreen ? <Minimize size={24} /> : <Maximize size={24} />}
           </button>
 
           <canvas ref={canvasRef} width={INTERNAL_WIDTH} height={INTERNAL_HEIGHT} className="block w-full h-full object-contain cursor-crosshair" />
 
           {gameState !== 'PLAYING' && !showSummary && (
-            <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-40 backdrop-blur-sm">
-              <h2 className="text-4xl font-black mb-2 uppercase">{gameState === 'PAUSED' ? 'Paused' : 'Saccadic Precision'}</h2>
-              <p className="text-slate-400 text-sm mb-6 max-w-xs text-center">
+            <div className="absolute inset-0 bg-slate-950/85 flex flex-col items-center justify-center z-40 backdrop-blur-sm">
+              <h2 className="text-4xl font-black mb-2 uppercase tracking-tight">{gameState === 'PAUSED' ? 'Paused' : 'Saccadic Precision'}</h2>
+              <p className="text-slate-400 text-sm mb-6 max-w-xs text-center font-medium">
                 Targets flash across a grid — tap them before they vanish to train your saccadic eye jumps.
               </p>
               <div className="flex flex-col gap-4">
                 <button
                   onClick={() => gameState === 'START' ? startGame() : setGameState('PLAYING')}
-                  className="flex items-center gap-2 px-8 py-4 bg-violet-500 hover:bg-violet-400 text-white font-bold rounded-full text-xl shadow-lg shadow-violet-500/30 transition hover:scale-105"
+                  className="flex items-center gap-2 px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-full text-xl shadow-lg shadow-indigo-500/30 transition hover:scale-105"
                 >
                   <Play fill="currentColor" /> {gameState === 'START' ? 'START' : 'CONTINUE'}
                 </button>
                 {gameState !== 'START' && (
-                  <button onClick={() => endGame()} className="px-6 py-2 bg-neutral-700 hover:bg-neutral-600 rounded-full text-sm font-bold">
+                  <button onClick={() => endGame()} className="px-6 py-2 bg-slate-800 hover:bg-slate-700 rounded-full text-sm font-bold border border-slate-700">
                     Finish Session
                   </button>
                 )}
@@ -361,19 +361,19 @@ export default function WhackATarget({ onGameEnd, requiresGlasses }) {
 
         {/* SIDEBAR */}
         {!isFullScreen && (
-          <div className="w-full lg:w-80 bg-slate-800/50 p-6 rounded-xl border border-slate-700 h-auto flex flex-col">
-            <div className="flex items-center gap-2 mb-6 text-violet-400 uppercase text-xs font-bold tracking-widest">
+          <div className="w-full lg:w-80 bg-slate-900/60 p-6 rounded-2xl border border-slate-800 h-auto flex flex-col">
+            <div className="flex items-center gap-2 mb-6 text-indigo-400 uppercase text-xs font-bold tracking-wider">
               <Settings size={14} /> How It Works
             </div>
             <div className="space-y-4 flex-1 text-sm text-slate-300">
-              <p>Colorful targets appear briefly across a <strong className="text-violet-400">6×6 grid</strong>.</p>
+              <p>Colorful targets appear briefly across a <strong className="text-indigo-400">6×6 grid</strong>.</p>
               <p><strong className="text-white">Click or tap</strong> them before they fade. Your accuracy and reaction speed are tracked.</p>
-              <p className="text-amber-400 font-bold">Targets get smaller as your score increases!</p>
-              <div className="bg-slate-900/60 p-3 rounded-lg text-xs text-slate-400 border border-slate-700">
-                <p className="font-semibold text-slate-300 mb-1">🧬 Clinical Purpose</p>
+              <p className="text-indigo-400 font-semibold">Targets get smaller as your score increases.</p>
+              <div className="bg-slate-950/80 p-4 rounded-xl text-xs text-slate-400 border border-slate-800 space-y-1">
+                <p className="font-semibold text-slate-200">Clinical Purpose</p>
                 <p>This exercise trains <em>saccadic eye movements</em> — the rapid, ballistic jumps your eyes make when switching fixation between objects. Improved saccadic accuracy helps with reading speed, sports vision, and reducing digital eye fatigue.</p>
               </div>
-              <div className="bg-black/30 p-4 rounded text-xs text-gray-400 italic border-t border-gray-700 mt-4">
+              <div className="bg-slate-950/40 p-3 rounded-lg text-xs text-slate-500 border border-slate-800/80">
                 Press SPACE to pause.
               </div>
             </div>

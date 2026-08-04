@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AlertTriangle, CheckCircle } from 'lucide-react'; // Or use simple emoji if no icon lib
+import { AlertTriangle, CheckCircle, Glasses, Eye } from 'lucide-react';
 
 const SafetyModal = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -26,8 +26,8 @@ const SafetyModal = () => {
         {/* Header */}
         <div className="bg-red-50 dark:bg-red-900/20 p-6 border-b border-red-100 dark:border-red-800">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-red-100 dark:bg-red-900/40 rounded-full text-red-600">
-              ⚠️
+            <div className="p-2 bg-red-100 dark:bg-red-900/40 rounded-full text-red-600 dark:text-red-400">
+              <AlertTriangle size={20} />
             </div>
             <h2 className="text-xl font-bold text-red-600 dark:text-red-400">
               Medical Safety Warning
@@ -48,12 +48,16 @@ const SafetyModal = () => {
           </ul>
 
           {/* Mode-Specific Info */}
-          <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800 text-xs space-y-1">
-            <p className="font-bold text-blue-700 dark:text-blue-300">🔴🔵 Dichoptic Mode (Glasses Required)</p>
+          <div className="bg-indigo-50 dark:bg-indigo-900/20 p-3 rounded-xl border border-indigo-200 dark:border-indigo-800 text-xs space-y-1">
+            <p className="font-bold text-indigo-700 dark:text-indigo-300 flex items-center gap-1.5">
+              <Glasses size={14} /> Dichoptic Mode (Glasses Required)
+            </p>
             <p>Designed for <strong>Amblyopia cortical anti-suppression</strong> using red/blue anaglyph glasses. Each eye receives a separate color-filtered stream to retrain binocular fusion.</p>
           </div>
-          <div className="bg-emerald-50 dark:bg-emerald-900/20 p-3 rounded-lg border border-emerald-200 dark:border-emerald-800 text-xs space-y-1">
-            <p className="font-bold text-emerald-700 dark:text-emerald-300">👁️ Glassless Mode (No Equipment)</p>
+          <div className="bg-slate-100 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs space-y-1">
+            <p className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+              <Eye size={14} /> Glassless Mode (No Equipment)
+            </p>
             <p>Designed for daily <strong>digital eye strain relief</strong>, visual tracking, and focus flexibility. Rendered in full color — no special glasses needed.</p>
           </div>
 
@@ -71,7 +75,7 @@ const SafetyModal = () => {
             onClick={handleAgree}
             className="w-full py-3 px-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2 shadow-lg shadow-red-500/30"
           >
-            ✅ I Understand & Agree
+            <CheckCircle size={18} /> I Understand & Agree
           </button>
         </div>
       </div>

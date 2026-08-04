@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Eye, Sparkles, CheckCircle, ArrowRight, Clock, LogIn, UserPlus } from 'lucide-react';
+import { Eye, Sparkles, CheckCircle, ArrowRight, Clock, LogIn, UserPlus, Target, Zap, Activity } from 'lucide-react';
 import ZoomingTarget from '../components/ZoomingTarget.jsx';
 import WhackATarget from '../components/WhackATarget.jsx';
 
@@ -26,16 +26,16 @@ const PHASES = [
     title: 'Dynamic Focus',
     subtitle: 'Accommodative Rock',
     description: 'Follow the pulsing target to flex your ciliary muscles.',
-    color: '#10B981',
-    icon: '🎯',
+    color: '#6366F1',
+    icon: Target,
   },
   {
     id: 'saccadic',
     title: 'Saccadic Precision',
     subtitle: 'Rapid Eye Jumps',
     description: 'Tap the flashing targets to train your saccadic eye movements.',
-    color: '#8B5CF6',
-    icon: '⚡',
+    color: '#818CF8',
+    icon: Zap,
   },
 ];
 
@@ -105,7 +105,7 @@ export default function DestrainRoutine() {
   // ── INTRO SCREEN ──
   if (routineState === 'INTRO') {
     return (
-      <div className="min-h-screen bg-[#0A0E17] flex items-center justify-center p-6 font-sans">
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6 font-sans">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -114,16 +114,16 @@ export default function DestrainRoutine() {
         >
           {/* Glow backdrop */}
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
-            <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[500px] h-[500px] rounded-full bg-emerald-500/10 blur-[120px]" />
+            <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[500px] h-[500px] rounded-full bg-indigo-600/10 blur-[120px]" />
           </div>
 
           <div className="relative z-10">
-            <div className="w-20 h-20 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center shadow-2xl shadow-emerald-500/30">
-              <Eye className="w-10 h-10 text-white" />
+            <div className="w-20 h-20 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-indigo-600 to-slate-900 flex items-center justify-center shadow-2xl shadow-indigo-500/20 border border-indigo-500/20">
+              <Eye className="w-10 h-10 text-indigo-300" />
             </div>
 
             <h1 className="text-4xl sm:text-5xl font-black text-white tracking-tight mb-3">
-              Quick Eye <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">De-Strain</span>
+              Quick Eye <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-slate-300">De-Strain</span>
             </h1>
             <p className="text-slate-400 text-lg mb-8 max-w-md mx-auto">
               A 5-minute routine to relieve digital eye strain. No glasses needed — just your screen.
@@ -131,29 +131,34 @@ export default function DestrainRoutine() {
 
             {/* Phase cards */}
             <div className="space-y-3 mb-8">
-              {PHASES.map((phase, i) => (
-                <div
-                  key={phase.id}
-                  className="flex items-center gap-4 p-4 rounded-2xl bg-slate-800/50 border border-slate-700/50 text-left"
-                >
-                  <div className="text-3xl">{phase.icon}</div>
-                  <div className="flex-1">
-                    <p className="text-white font-bold">{phase.title}</p>
-                    <p className="text-slate-400 text-sm">{phase.description}</p>
+              {PHASES.map((phase) => {
+                const PhaseIcon = phase.icon;
+                return (
+                  <div
+                    key={phase.id}
+                    className="flex items-center gap-4 p-4 rounded-2xl bg-slate-900/60 border border-slate-800 text-left"
+                  >
+                    <div className="p-2.5 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-indigo-400">
+                      <PhaseIcon size={24} />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-white font-bold">{phase.title}</p>
+                      <p className="text-slate-400 text-sm">{phase.description}</p>
+                    </div>
+                    <div className="text-slate-500 text-xs font-mono">2:30</div>
                   </div>
-                  <div className="text-slate-500 text-xs font-mono">2:30</div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <button
               onClick={startRoutine}
-              className="w-full py-4 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-white font-bold text-lg rounded-2xl shadow-xl shadow-emerald-500/25 transition-all hover:scale-[1.02] active:scale-95"
+              className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-lg rounded-2xl shadow-xl shadow-indigo-600/25 transition-all hover:scale-[1.02] active:scale-95"
             >
               Start De-Strain Routine
             </button>
 
-            <p className="text-slate-600 text-xs mt-4">
+            <p className="text-slate-500 text-xs mt-4">
               No equipment needed · Works on any screen · Glassless exercises
             </p>
           </div>
@@ -165,23 +170,26 @@ export default function DestrainRoutine() {
   // ── TRANSITION SCREEN (between phases) ──
   if (routineState === 'TRANSITION') {
     const nextPhase = PHASES[currentPhase + 1];
+    const NextPhaseIcon = nextPhase?.icon || Target;
     return (
-      <div className="min-h-screen bg-[#0A0E17] flex items-center justify-center p-6 font-sans">
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6 font-sans">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.4 }}
           className="max-w-md w-full text-center"
         >
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-emerald-500/20 flex items-center justify-center">
-            <CheckCircle className="w-8 h-8 text-emerald-400" />
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-indigo-500/20 flex items-center justify-center border border-indigo-500/30">
+            <CheckCircle className="w-8 h-8 text-indigo-400" />
           </div>
           <h2 className="text-2xl font-black text-white mb-2">Phase 1 Complete!</h2>
           <p className="text-slate-400 mb-6">Great focus work. Take a breath — next up:</p>
 
-          <div className="p-5 rounded-2xl bg-slate-800/50 border border-slate-700/50 text-left mb-6">
-            <div className="flex items-center gap-3">
-              <div className="text-3xl">{nextPhase?.icon}</div>
+          <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 text-left mb-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-indigo-400">
+                <NextPhaseIcon size={24} />
+              </div>
               <div>
                 <p className="text-white font-bold text-lg">{nextPhase?.title}</p>
                 <p className="text-slate-400 text-sm">{nextPhase?.description}</p>
@@ -191,7 +199,7 @@ export default function DestrainRoutine() {
 
           <button
             onClick={advancePhase}
-            className="w-full py-4 bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-400 hover:to-purple-400 text-white font-bold text-lg rounded-2xl shadow-xl shadow-violet-500/25 transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2"
+            className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-lg rounded-2xl shadow-xl shadow-indigo-600/25 transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2"
           >
             Continue <ArrowRight className="w-5 h-5" />
           </button>
@@ -203,36 +211,36 @@ export default function DestrainRoutine() {
   // ── COMPLETE SCREEN ──
   if (routineState === 'COMPLETE') {
     return (
-      <div className="min-h-screen bg-[#0A0E17] flex items-center justify-center p-6 font-sans">
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6 font-sans">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           className="max-w-md w-full text-center"
         >
-          <div className="w-20 h-20 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-emerald-400 to-cyan-400 flex items-center justify-center shadow-2xl">
-            <Sparkles className="w-10 h-10 text-white" />
+          <div className="w-20 h-20 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-indigo-600 to-slate-900 flex items-center justify-center shadow-2xl border border-indigo-500/20">
+            <Sparkles className="w-10 h-10 text-indigo-300" />
           </div>
 
-          <h2 className="text-3xl font-black text-white mb-2">Eyes Refreshed! 🎉</h2>
-          <p className="text-slate-400 mb-8">Your 5-minute de-strain routine is complete.</p>
+          <h2 className="text-3xl font-black text-white mb-2">Routine Complete</h2>
+          <p className="text-slate-400 mb-8">Your 5-minute de-strain session is finished.</p>
 
           {/* 20-20-20 Rule */}
-          <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-5 mb-6 text-left">
+          <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 mb-6 text-left">
             <p className="text-white font-bold text-sm mb-3 flex items-center gap-2">
-              <Eye className="w-4 h-4 text-emerald-400" /> Follow the 20-20-20 Rule
+              <Eye className="w-4 h-4 text-indigo-400" /> Follow the 20-20-20 Rule
             </p>
             <ul className="space-y-2 text-slate-300 text-sm">
-              <li>👀 Look at something <strong className="text-white">20 feet away</strong>.</li>
-              <li>⏱️ Focus on it for <strong className="text-white">20 seconds</strong>.</li>
-              <li>🧘 Relax and blink naturally.</li>
+              <li>• Look at something <strong className="text-white">20 feet away</strong>.</li>
+              <li>• Focus on it for <strong className="text-white">20 seconds</strong>.</li>
+              <li>• Relax and blink naturally.</li>
             </ul>
           </div>
 
           {/* CTA for unauthenticated users */}
-          <div className="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 rounded-2xl p-5 mb-6">
+          <div className="bg-gradient-to-r from-indigo-500/10 to-slate-900/50 border border-indigo-500/20 rounded-2xl p-5 mb-6">
             <p className="text-white font-bold mb-1">Track your progress over time</p>
-            <p className="text-slate-400 text-sm mb-4">Sign up to log streaks, save scores, and unlock Amblyopia dichoptic therapy.</p>
+            <p className="text-slate-400 text-sm mb-4">Sign up to log streaks, save scores, and access full exercises.</p>
             <div className="flex gap-3">
               <Link
                 to="/sign-up"
@@ -242,7 +250,7 @@ export default function DestrainRoutine() {
               </Link>
               <Link
                 to="/sign-in"
-                className="flex-1 py-3 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition text-sm"
+                className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition text-sm border border-slate-700"
               >
                 <LogIn className="w-4 h-4" /> Sign In
               </Link>
@@ -251,7 +259,7 @@ export default function DestrainRoutine() {
 
           <button
             onClick={startRoutine}
-            className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl transition border border-slate-700"
+            className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl transition border border-slate-800"
           >
             Repeat Routine
           </button>
@@ -262,15 +270,18 @@ export default function DestrainRoutine() {
 
   // ── PLAYING STATE ──
   const phase = PHASES[currentPhase];
+  const CurrentPhaseIcon = phase.icon;
 
   return (
-    <div className="min-h-screen bg-[#0A0E17] flex flex-col font-sans">
+    <div className="min-h-screen bg-slate-950 flex flex-col font-sans">
       {/* Top Progress Bar */}
-      <div className="sticky top-0 z-50 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 py-3">
+      <div className="sticky top-0 z-50 bg-slate-950/90 backdrop-blur-md border-b border-slate-800 px-4 py-3">
         <div className="max-w-4xl mx-auto flex items-center gap-4">
           {/* Phase label */}
           <div className="flex items-center gap-2">
-            <span className="text-lg">{phase.icon}</span>
+            <div className="p-1.5 bg-indigo-500/10 rounded-lg text-indigo-400">
+              <CurrentPhaseIcon size={16} />
+            </div>
             <div>
               <p className="text-white font-bold text-sm leading-tight">{phase.title}</p>
               <p className="text-slate-500 text-xs">{phase.subtitle}</p>
@@ -300,7 +311,7 @@ export default function DestrainRoutine() {
               <div
                 key={i}
                 className={`w-2.5 h-2.5 rounded-full transition-colors ${
-                  i < currentPhase ? 'bg-emerald-400' :
+                  i < currentPhase ? 'bg-indigo-400' :
                   i === currentPhase ? 'bg-white' :
                   'bg-slate-700'
                 }`}
