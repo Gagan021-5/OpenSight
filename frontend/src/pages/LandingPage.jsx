@@ -116,13 +116,6 @@ export default function LandingPage() {
               <Eye className="w-5 h-5 text-indigo-600" />
               {"Try Free De-Strain"}
             </Link>
-
-            <Link
-              to="/sign-in"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 transition-all duration-300 hover:shadow-md text-lg"
-            >
-              {t("landing.signIn") || "Patient Login"}
-            </Link>
           </motion.div>
 
           {/* Social Proof / Trust Badges */}
