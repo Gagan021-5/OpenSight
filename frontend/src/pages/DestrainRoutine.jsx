@@ -37,6 +37,9 @@ const PHASES = [
 ];
 
 export default function DestrainRoutine() {
+  const { ageGroup } = useGlobal?.() || { ageGroup: 'adult' };
+  const isKids = ageGroup === 'kid';
+
   const [routineState, setRoutineState] = useState('INTRO'); // INTRO | PLAYING | TRANSITION | COMPLETE
   const [currentPhase, setCurrentPhase] = useState(0);
   const [phaseTimeLeft, setPhaseTimeLeft] = useState(PHASE_DURATION_MS);
@@ -101,26 +104,43 @@ export default function DestrainRoutine() {
   // ── INTRO SCREEN ──
   if (routineState === 'INTRO') {
     return (
-      <div className="min-h-screen bg-slate-50 selection:bg-indigo-100 flex items-center justify-center p-6 font-sans relative overflow-hidden">
+      <div className={`min-h-screen flex items-center justify-center p-6 font-sans relative overflow-hidden ${
+        isKids ? 'bg-[#FFF8E7] selection:bg-amber-200' : 'bg-slate-50 selection:bg-indigo-100'
+      }`}>
         {/* Ambient background blur */}
-        <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-blue-200/40 blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full bg-purple-200/30 blur-[120px] pointer-events-none" />
+        <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-amber-200/40 blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full bg-orange-200/30 blur-[120px] pointer-events-none" />
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="max-w-lg w-full bg-white/80 border border-slate-200/80 shadow-2xl shadow-slate-200/50 backdrop-blur-xl rounded-[2.5rem] p-8 sm:p-10 text-center relative z-10"
+          className={`max-w-lg w-full rounded-[2.5rem] p-8 sm:p-10 text-center relative z-10 ${
+            isKids
+              ? 'bg-white border-4 border-amber-200 shadow-2xl shadow-amber-100/80 font-nunito'
+              : 'bg-white/80 border border-slate-200/80 shadow-2xl shadow-slate-200/50 backdrop-blur-xl'
+          }`}
         >
-          <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-slate-900 text-white flex items-center justify-center shadow-lg shadow-slate-200">
+          <div className={`w-16 h-16 mx-auto mb-6 rounded-2xl flex items-center justify-center shadow-lg ${
+            isKids
+              ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-amber-950 shadow-amber-200 border-2 border-yellow-200'
+              : 'bg-slate-900 text-white shadow-slate-200'
+          }`}>
             <Eye className="w-8 h-8" />
           </div>
 
-          <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight leading-tight mb-3">
-            Quick Eye <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-700 to-indigo-600">De-Strain</span>
+          <h1 className={`text-3xl sm:text-4xl font-black tracking-tight leading-tight mb-3 ${isKids ? 'text-slate-900 font-black' : 'text-slate-900'}`}>
+            {isKids ? (
+              <>🚀 Quick Eye <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-orange-500">Power-Up!</span></>
+            ) : (
+              <>Quick Eye <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-700 to-indigo-600">De-Strain</span></>
+            )}
           </h1>
-          <p className="text-slate-500 text-base mb-8 max-w-sm mx-auto font-medium leading-relaxed">
-            A 5-minute clinical exercise routine to relieve digital eye strain. No special equipment needed.
+          <p className={`text-base mb-8 max-w-sm mx-auto font-medium leading-relaxed ${isKids ? 'text-slate-600 font-bold' : 'text-slate-500'}`}>
+            {isKids
+              ? 'Charge up your super vision in 5 minutes! Tap the targets and complete your daily quest!'
+              : 'A 5-minute clinical exercise routine to relieve digital eye strain. No special equipment needed.'
+            }
           </p>
 
           {/* Phase cards */}
@@ -130,16 +150,24 @@ export default function DestrainRoutine() {
               return (
                 <div
                   key={phase.id}
-                  className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50/80 border border-slate-200/60 text-left"
+                  className={`flex items-center gap-4 p-4 rounded-2xl border text-left ${
+                    isKids
+                      ? 'bg-amber-50/70 border-amber-200/80'
+                      : 'bg-slate-50/80 border-slate-200/60'
+                  }`}
                 >
-                  <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl text-indigo-600 shrink-0">
+                  <div className={`p-3 rounded-xl shrink-0 ${
+                    isKids
+                      ? 'bg-amber-400 text-amber-950 border border-yellow-200 font-bold'
+                      : 'bg-indigo-50 border border-indigo-100 text-indigo-600'
+                  }`}>
                     <PhaseIcon size={20} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-slate-900 font-bold text-base tracking-tight">{phase.title}</p>
-                    <p className="text-slate-500 text-xs truncate">{phase.description}</p>
+                    <p className={`font-bold text-base tracking-tight ${isKids ? 'text-slate-900 font-black' : 'text-slate-900'}`}>{phase.title}</p>
+                    <p className={`text-xs truncate ${isKids ? 'text-slate-600 font-semibold' : 'text-slate-500'}`}>{phase.description}</p>
                   </div>
-                  <div className="text-slate-400 text-xs font-mono font-semibold shrink-0">2:30</div>
+                  <div className={`text-xs font-mono font-semibold shrink-0 ${isKids ? 'text-amber-800 font-bold' : 'text-slate-400'}`}>2:30</div>
                 </div>
               );
             })}
@@ -147,13 +175,17 @@ export default function DestrainRoutine() {
 
           <button
             onClick={startRoutine}
-            className="w-full py-4 bg-slate-900 hover:bg-slate-800 text-white font-bold text-base rounded-2xl shadow-xl shadow-slate-200 transition-all hover:scale-[1.01] active:scale-95"
+            className={`w-full py-4 font-bold text-base rounded-2xl shadow-xl transition-all hover:scale-[1.01] active:scale-95 ${
+              isKids
+                ? 'bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-500 hover:to-orange-500 text-amber-950 font-black text-lg shadow-amber-200 border-2 border-yellow-300'
+                : 'bg-slate-900 hover:bg-slate-800 text-white shadow-slate-200'
+            }`}
           >
-            Start De-Strain Routine
+            {isKids ? 'Start Super Mission ⚡' : 'Start De-Strain Routine'}
           </button>
 
-          <p className="text-slate-400 text-xs mt-4 font-medium">
-            No equipment required · Works on any screen · Glassless mode
+          <p className={`text-xs mt-4 font-medium ${isKids ? 'text-amber-800 font-bold' : 'text-slate-400'}`}>
+            {isKids ? 'No glasses needed · Fun vision adventure!' : 'No equipment required · Works on any screen · Glassless mode'}
           </p>
         </motion.div>
       </div>

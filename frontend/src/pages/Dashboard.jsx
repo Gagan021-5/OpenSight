@@ -53,34 +53,34 @@ const StatCard = ({ icon: Icon, label, value, isKids, colorTheme }) => {
   // Explicit styling map to ensure high contrast on all devices
   const THEME_STYLES = {
     yellow: {
-      bg: "bg-yellow-50",
-      border: "border-yellow-200",
-      textMain: "text-yellow-900",
-      textSub: "text-yellow-700",
-      iconBg: "bg-yellow-200",
-      iconColor: "text-yellow-800"
+      bg: "bg-amber-100/90",
+      border: "border-4 border-amber-300",
+      textMain: "text-amber-950 font-nunito font-black",
+      textSub: "text-amber-800 font-nunito font-bold",
+      iconBg: "bg-amber-400 border-2 border-yellow-200",
+      iconColor: "text-amber-950"
     },
     blue: {
-      bg: "bg-blue-50",
-      border: "border-blue-200",
-      textMain: "text-blue-900",
-      textSub: "text-blue-700",
-      iconBg: "bg-blue-200",
-      iconColor: "text-blue-800"
+      bg: "bg-sky-100/90",
+      border: "border-4 border-sky-300",
+      textMain: "text-sky-950 font-nunito font-black",
+      textSub: "text-sky-800 font-nunito font-bold",
+      iconBg: "bg-sky-400 border-2 border-sky-200",
+      iconColor: "text-sky-950"
     },
     green: {
-      bg: "bg-green-50",
-      border: "border-green-200",
-      textMain: "text-green-900",
-      textSub: "text-green-700",
-      iconBg: "bg-green-200",
-      iconColor: "text-green-800"
+      bg: "bg-emerald-100/90",
+      border: "border-4 border-emerald-300",
+      textMain: "text-emerald-950 font-nunito font-black",
+      textSub: "text-emerald-800 font-nunito font-bold",
+      iconBg: "bg-emerald-400 border-2 border-emerald-200",
+      iconColor: "text-emerald-950"
     },
     slate: { // Adult Default
       bg: "bg-white/60 backdrop-blur-xl",
-      border: "border-slate-200/60",
-      textMain: "text-slate-900",
-      textSub: "text-slate-500",
+      border: "border border-slate-200/60",
+      textMain: "text-slate-900 font-bold",
+      textSub: "text-slate-500 font-bold",
       iconBg: "bg-slate-100",
       iconColor: "text-slate-600"
     }
@@ -91,19 +91,21 @@ const StatCard = ({ icon: Icon, label, value, isKids, colorTheme }) => {
   return (
     <motion.div
       variants={ANIMATION_VARIANTS.item}
-      className={`relative overflow-hidden rounded-2xl p-5 border transition-all duration-300 ${theme.bg} ${theme.border}`}
+      className={`relative overflow-hidden p-5 transition-all duration-300 ${
+        isKids ? 'rounded-3xl shadow-lg shadow-amber-100/60 hover:scale-105' : 'rounded-2xl'
+      } ${theme.bg} ${theme.border}`}
     >
       <div className="flex items-start justify-between">
         <div>
-          <p className={`text-sm font-bold mb-1 uppercase tracking-wide ${theme.textSub} ${isKids ? 'font-nunito' : ''}`}>
+          <p className={`text-xs uppercase tracking-wider mb-1 ${theme.textSub}`}>
             {label}
           </p>
-          <h3 className={`text-2xl sm:text-3xl font-black tracking-tight ${theme.textMain} ${isKids ? 'font-nunito' : ''}`}>
+          <h3 className={`text-2xl sm:text-3xl tracking-tight ${theme.textMain}`}>
             {value}
           </h3>
         </div>
-        <div className={`p-3 rounded-xl ${theme.iconBg} ${theme.iconColor}`}>
-          <Icon size={24} strokeWidth={isKids ? 2.5 : 2} />
+        <div className={`p-3 rounded-2xl ${theme.iconBg} ${theme.iconColor} shadow-md`}>
+          <Icon size={26} strokeWidth={isKids ? 3 : 2} />
         </div>
       </div>
     </motion.div>
@@ -117,23 +119,27 @@ const GameCard = ({ game, isKids }) => {
   return (
     <motion.div
       variants={ANIMATION_VARIANTS.item}
-      whileHover={{ y: -8, scale: 1.01 }}
-      className={`group relative flex flex-col h-full overflow-hidden rounded-[2rem] border transition-all duration-500 ${
+      whileHover={{ y: -8, scale: 1.02 }}
+      className={`group relative flex flex-col h-full overflow-hidden transition-all duration-500 ${
         isKids
-          ? "bg-white border-yellow-200 shadow-xl shadow-yellow-100/50 hover:shadow-2xl hover:shadow-yellow-200/50"
-          : "bg-white/80 border-white/60 shadow-lg shadow-slate-200/50 hover:shadow-xl hover:shadow-slate-300/50 backdrop-blur-md"
+          ? "bg-white border-4 border-amber-200/90 rounded-[2.5rem] shadow-xl shadow-amber-100/60 hover:border-amber-400 hover:shadow-2xl hover:shadow-amber-200/80"
+          : "bg-white/80 border-white/60 shadow-lg shadow-slate-200/50 hover:shadow-xl hover:shadow-slate-300/50 backdrop-blur-md rounded-[2rem] border"
       }`}
     >
       {/* Card Header Background */}
-      <div className={`absolute inset-x-0 top-0 h-32 opacity-20 transition-opacity duration-500 group-hover:opacity-30 ${
+      <div className={`absolute inset-x-0 top-0 h-32 transition-opacity duration-500 ${
         isKids 
-          ? "bg-gradient-to-b from-yellow-300 to-transparent" 
-          : "bg-gradient-to-b from-indigo-100 to-transparent"
+          ? "bg-gradient-to-b from-amber-100/80 via-yellow-50/50 to-transparent opacity-80 group-hover:opacity-100" 
+          : "bg-gradient-to-b from-indigo-100 to-transparent opacity-20 group-hover:opacity-30"
       }`} />
 
       <div className="relative p-8 flex flex-col h-full z-10">
         {/* Mode Badge */}
-        {!isKids && (
+        {isKids ? (
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider mb-4 w-fit bg-amber-100 text-amber-900 border border-amber-300 font-nunito shadow-sm">
+            <span>⭐ Super Quest</span>
+          </div>
+        ) : (
           <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wider mb-4 w-fit ${
             isGlassless
               ? "bg-slate-100 text-slate-700 border border-slate-200"
@@ -150,18 +156,18 @@ const GameCard = ({ game, isKids }) => {
         {/* Icon Container */}
         <div className={`w-16 h-16 rounded-2xl mb-6 flex items-center justify-center shadow-lg transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3 ${
           isKids
-            ? "bg-gradient-to-br from-yellow-400 to-orange-500 text-white"
+            ? "bg-gradient-to-br from-amber-400 via-orange-400 to-amber-500 text-amber-950 shadow-amber-200/80 border-2 border-yellow-200"
             : "bg-gradient-to-br from-slate-800 to-indigo-950 text-white"
         }`}>
-          <IconComponent size={32} strokeWidth={2} />
+          <IconComponent size={34} strokeWidth={isKids ? 2.5 : 2} />
         </div>
 
         {/* Content */}
         <div className="flex-1">
-          <h3 className={`text-2xl font-bold mb-3 ${isKids ? "text-slate-900 font-nunito" : "text-slate-900 tracking-tight"}`}>
+          <h3 className={`text-2xl font-bold mb-3 ${isKids ? "text-slate-900 font-nunito font-black text-2xl" : "text-slate-900 tracking-tight"}`}>
             {game.title}
           </h3>
-          <p className={`text-base leading-relaxed mb-6 ${isKids ? "text-slate-600 font-nunito" : "text-slate-500"}`}>
+          <p className={`text-base leading-relaxed mb-6 ${isKids ? "text-slate-600 font-nunito font-semibold" : "text-slate-500"}`}>
             {game.description}
           </p>
         </div>
@@ -172,12 +178,12 @@ const GameCard = ({ game, isKids }) => {
             to={game.path}
             className={`w-full inline-flex items-center justify-center gap-2 py-4 rounded-2xl font-bold transition-all duration-300 group-hover:gap-3 ${
               isKids
-                ? "bg-yellow-400 hover:bg-yellow-500 text-yellow-900 shadow-lg shadow-yellow-200"
+                ? "bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-500 hover:to-orange-500 text-amber-950 font-nunito font-black text-lg shadow-lg shadow-amber-200 border-2 border-yellow-300"
                 : "bg-slate-900 hover:bg-slate-800 text-white shadow-lg shadow-slate-200"
             }`}
           >
-            <span>Play Now</span>
-            <ArrowUpRight size={20} strokeWidth={3} />
+            <span>{isKids ? "Play Mission 🚀" : "Play Now"}</span>
+            {!isKids && <ArrowUpRight size={20} strokeWidth={3} />}
           </Link>
         </div>
       </div>
