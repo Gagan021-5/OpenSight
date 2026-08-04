@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Eye, Sparkles, CheckCircle, ArrowRight, Clock, LogIn, UserPlus, Target, Zap } from 'lucide-react';
+import { useGlobal } from '../context/GlobalContext.jsx';
 import ZoomingTarget from '../components/ZoomingTarget.jsx';
 import WhackATarget from '../components/WhackATarget.jsx';
 
@@ -37,7 +38,15 @@ const PHASES = [
 ];
 
 export default function DestrainRoutine() {
-  const { ageGroup } = useGlobal?.() || { ageGroup: 'adult' };
+  let ageGroup = 'adult';
+  try {
+    const globalContext = useGlobal();
+    if (globalContext?.ageGroup) {
+      ageGroup = globalContext.ageGroup;
+    }
+  } catch (e) {
+    // Fallback to adult theme if loaded outside GlobalProvider
+  }
   const isKids = ageGroup === 'kid';
 
   const [routineState, setRoutineState] = useState('INTRO'); // INTRO | PLAYING | TRANSITION | COMPLETE
