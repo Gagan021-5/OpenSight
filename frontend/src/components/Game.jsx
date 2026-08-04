@@ -1,21 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Play, Pause, Settings, Clock, Eye, RefreshCw, Home, AlertTriangle } from 'lucide-react';
+import { Play, Pause, Settings, Clock, Eye, RefreshCw, Home } from 'lucide-react';
 
 // Custom Hooks & Components
 import { useSessionTimer } from '../hooks/useSessionTimer';
 import { useCalibration } from '../components/CalibrationPanel';
 import CalibrationPanel from '../components/CalibrationPanel';
-import GlassesDetection from '../components/GlassesDetection';
 
-const Game = () => {
+const Game = ({ requiresGlasses = true }) => {
   const canvasRef = useRef(null);
   const navigate = useNavigate();
 
   // --- 1. GAME STATE ---
   const [gameState, setGameState] = useState('IDLE'); // 'IDLE', 'PLAYING', 'PAUSED', 'FINISHED'
   const [showCalibration, setShowCalibration] = useState(false);
-  const [glassesWarning, setGlassesWarning] = useState(false);
 
   // --- 2. HOOKS ---
   // Timer: 20 minutes (1200 seconds)
@@ -44,20 +42,9 @@ const Game = () => {
     navigate('/dashboard');
   };
 
-  // --- 4. AI GLASSES LOGIC ---
-  const handleGlassesStatus = (isWearingGlasses) => {
-    // If game is running and user takes off glasses -> PAUSE
-    if (gameState === 'PLAYING' && !isWearingGlasses) {
-      console.warn("⚠️ Safety System: Glasses removed. Pausing.");
-      setGlassesWarning(true);
-      pauseGame();
-    } 
-    // If game was paused by warning and user puts them back on -> RESUME (Optional)
-    else if (glassesWarning && isWearingGlasses) {
-      setGlassesWarning(false);
-      // resumeGame(); // Uncomment if you want auto-resume
-    }
-  };
+  // --- 4. AI GLASSES LOGIC (BYPASSED) ---
+  // Glasses detection is temporarily disabled.
+  // All games launch immediately without webcam verification.
 
   // --- 5. GAME LOOP & RENDERING ---
   useEffect(() => {
@@ -115,13 +102,15 @@ const Game = () => {
 
         {/* Action Buttons */}
         <div className="flex gap-3">
-          <button 
-            onClick={() => setShowCalibration(!showCalibration)}
-            className="p-2 bg-slate-800 rounded-lg hover:bg-slate-700 transition border border-slate-700"
-            title="Calibrate Glasses"
-          >
-            <Settings className="w-6 h-6 text-slate-300" />
-          </button>
+          {requiresGlasses && (
+            <button 
+              onClick={() => setShowCalibration(!showCalibration)}
+              className="p-2 bg-slate-800 rounded-lg hover:bg-slate-700 transition border border-slate-700"
+              title="Calibrate Glasses"
+            >
+              <Settings className="w-6 h-6 text-slate-300" />
+            </button>
+          )}
 
           {gameState === 'IDLE' ? (
             <button onClick={startGame} className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold shadow-lg shadow-blue-500/30 transition flex gap-2">
@@ -154,7 +143,7 @@ const Game = () => {
         {/* --- OVERLAYS --- */}
 
         {/* 1. PAUSE MENU */}
-        {gameState === 'PAUSED' && !glassesWarning && (
+        {gameState === 'PAUSED' && (
           <div className="absolute inset-0 flex items-center justify-center z-20">
             <div className="bg-slate-900/90 p-8 rounded-2xl border border-slate-700 text-center backdrop-blur-md shadow-2xl">
               <h2 className="text-3xl font-bold text-white mb-2">Game Paused</h2>
@@ -165,37 +154,12 @@ const Game = () => {
           </div>
         )}
 
-        {/* 2. GLASSES WARNING (AI Triggered) */}
-        {glassesWarning && (
-          <div className="absolute inset-0 flex items-center justify-center z-50 bg-red-950/80 backdrop-blur-md">
-            <div className="bg-slate-900 p-8 rounded-2xl border-2 border-red-500 text-center shadow-2xl max-w-md">
-              <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4 animate-bounce" />
-              <h2 className="text-2xl font-bold text-white mb-2">Glasses Not Detected!</h2>
-              <p className="text-slate-300 mb-6">
-                Therapy paused. Please put your Red/Blue glasses back on to continue.
-              </p>
-              <button 
-                onClick={() => { setGlassesWarning(false); resumeGame(); }} 
-                className="w-full py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold transition"
-              >
-                I'm Wearing Them
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* 3. CALIBRATION PANEL (Slide-over) */}
-        {showCalibration && (
+        {/* 2. CALIBRATION PANEL (Slide-over — dichoptic games only) */}
+        {requiresGlasses && showCalibration && (
           <div className="absolute top-4 right-4 z-40 w-80 animate-in slide-in-from-right duration-300">
             <CalibrationPanel />
           </div>
         )}
-
-        {/* 4. INVISIBLE AI DETECTOR */}
-        <GlassesDetection 
-          isActive={gameState === 'PLAYING'} 
-          onGlassesStatusChange={handleGlassesStatus} 
-        />
       </div>
 
       {/* --- SESSION COMPLETE MODAL (20-20-20 Rule) --- */}

@@ -179,8 +179,8 @@ export default function Chatbot() {
                   </div>
                   <p className="text-xs md:text-sm font-medium">
                     {isKids 
-                      ? "Hi! Ask me anything about your mission! 🚀" 
-                      : "How can I assist with your vision therapy today?"
+                      ? "Hi! Ask me anything about your eye missions! 🚀" 
+                      : "Ask about Amblyopia dichoptic training (glasses mode) or daily eye strain relief (glassless mode)."
                     }
                   </p>
                 </div>
